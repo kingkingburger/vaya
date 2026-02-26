@@ -1,0 +1,15 @@
+{
+  "name": "vaya",
+  "version": "0.1.0",
+  "description": "Game video auto-editing desktop app",
+  "scripts": {
+    "start": "electrobun dev",
+    "build": "electrobun build"
+  },
+  "dependencies": {
+    "electrobun": "^1.12.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

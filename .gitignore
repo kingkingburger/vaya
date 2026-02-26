@@ -1,1 +1,32 @@
 .omc
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# Backend storage (runtime data)
+backend/storage/uploads/
+backend/storage/thumbnails/
+backend/storage/analysis/
+backend/storage/exports/
+
+# Node/Bun
+node_modules/
+dist/
+.electrobun/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local

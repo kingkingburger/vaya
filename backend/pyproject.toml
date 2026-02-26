@@ -1,0 +1,23 @@
+[project]
+name = "vaya-backend"
+version = "0.1.0"
+description = "Vaya game video auto-editing backend"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "ffmpeg-python>=0.2.0",
+    "opencv-python-headless>=4.10.0",
+    "librosa>=0.10.0",
+    "openai-whisper>=20240930",
+    "pyyaml>=6.0",
+    "python-multipart>=0.0.9",
+    "websockets>=14.0",
+    "torch>=2.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.27.0",
+]

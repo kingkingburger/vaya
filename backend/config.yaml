@@ -1,0 +1,20 @@
+highlight:
+  audio_weight: 0.6
+  video_weight: 0.4
+  top_percent: 30
+  min_clip_duration: 3
+  max_clip_duration: 60
+  merge_gap: 2
+
+silence:
+  threshold_db: -40
+  min_silence_duration: 1.5
+  padding: 0.3
+
+subtitle:
+  model: "medium"
+  language: "ko"
+  font_size: 24
+  font_color: "white"
+  outline_color: "black"
+  position: "bottom"
