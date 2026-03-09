@@ -34,10 +34,17 @@ def get_patched_main_js():
     # Replace the Electroview class with our mock
     # Pattern: from "var WEBVIEW_ID" to just before "var rpc = Electroview.defineRPC"
     pattern = r'var WEBVIEW_ID = .*?class Electroview \{.*?\n\}'
-    js = re.sub(pattern, mock_js, js, count=1, flags=re.DOTALL)
+    patched = re.sub(pattern, mock_js, js, count=1, flags=re.DOTALL)
+    if patched == js:
+        raise RuntimeError(
+            "Failed to patch Electroview class — regex pattern did not match. "
+            "The built main.js structure may have changed."
+        )
+    js = patched
 
-    # Remove the initBackendStatus call since our mock sends backendReady via message
-    # The mock already handles this in its constructor
+    # Comment out initBackendStatus() — the mock's backendReady push handles this.
+    # Keeping initBackendStatus active causes competing RPC requests that
+    # interfere with the upload flow under load.
     js = js.replace(
         'initBackendStatus();',
         '// initBackendStatus(); -- handled by mock Electroview'

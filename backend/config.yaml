@@ -1,18 +1,18 @@
 highlight:
-  audio_weight: 0.7
+  audio_weight: 0.6
   max_clip_duration: 120
   merge_gap: 3
   min_clip_duration: 5
-  top_percent: 40
-  video_weight: 0.3
+  top_percent: 30
+  video_weight: 0.4
 silence:
   min_silence_duration: 2.0
-  padding: 0.5
-  threshold_db: -35
+  padding: 0.3
+  threshold_db: -40
 subtitle:
   font_color: white
   font_size: 24
   language: ko
-  model: base
+  model: medium
   outline_color: black
   position: bottom

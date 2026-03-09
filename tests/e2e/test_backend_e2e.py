@@ -7,11 +7,8 @@ import time
 import json
 import pytest
 import httpx
-import asyncio
-import websockets
 
 BACKEND_URL = "http://127.0.0.1:8765"
-WS_URL = "ws://127.0.0.1:8765"
 SAMPLE_VIDEO = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "fixtures", "sample.mp4")
 )
@@ -94,27 +91,6 @@ class TestAnalysisPipeline:
     def uploaded_video(self, client):
         r = client.post("/api/upload", json={"file_path": SAMPLE_VIDEO})
         return r.json()["id"]
-
-    def _wait_analysis_complete(self, client, video_id, timeout=90):
-        """Wait for analysis background task to finish (check _analyzing set cleared)."""
-        client.post(f"/api/video/{video_id}/analyze")
-        for _ in range(timeout):
-            time.sleep(1)
-            # Try starting another analysis — if 409, still running
-            r = client.post(f"/api/video/{video_id}/analyze")
-            if r.status_code == 200:
-                # Analysis finished and we just re-started it, wait again
-                continue
-            if r.status_code == 409:
-                continue
-            break
-        # Final check — wait for lock release
-        for _ in range(timeout):
-            time.sleep(1)
-            r = client.post(f"/api/video/{video_id}/analyze")
-            if r.status_code != 409:
-                return True
-        return False
 
     def test_start_analysis(self, client, uploaded_video):
         r = client.post(f"/api/video/{uploaded_video}/analyze")
@@ -232,6 +208,9 @@ class TestSettings:
         assert r.status_code == 200
 
     def test_put_settings(self, client):
+        # Save original settings for restore
+        original = client.get("/api/settings").json()
+
         settings = {
             "highlight": {
                 "audio_weight": 0.7,
@@ -258,3 +237,6 @@ class TestSettings:
         r = client.get("/api/settings")
         data = r.json()
         assert data["highlight"]["audio_weight"] == 0.7
+
+        # Restore original settings to avoid polluting config.yaml
+        client.put("/api/settings", json=original)

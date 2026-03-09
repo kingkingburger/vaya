@@ -106,6 +106,10 @@ class Electroview {
   // Static method used by the frontend code — delegates to defineElectrobunRPC
   // which properly registers message handlers (backendReady, backendError)
   static defineRPC(config) {
-    return defineElectrobunRPC('webview', config);
+    return defineElectrobunRPC('webview', {
+      ...config,
+      // Default is 1000ms — uploads with FFmpeg thumbnails can exceed this
+      maxRequestTime: 30000
+    });
   }
 }

@@ -8,19 +8,21 @@
 </head>
 <body>
   <script>
-    // Debug: catch and display JS errors visually
-    window.onerror = function(msg, url, line, col, err) {
-      var d = document.createElement('div');
-      d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:red;color:white;padding:12px;font:14px monospace;white-space:pre-wrap;';
-      d.textContent = 'JS ERROR: ' + msg + '\n' + (url||'').split('/').pop() + ':' + line + ':' + col;
-      document.body.prepend(d);
-    };
-    window.addEventListener('unhandledrejection', function(e) {
-      var d = document.createElement('div');
-      d.style.cssText = 'position:fixed;top:40px;left:0;right:0;z-index:99999;background:orange;color:black;padding:12px;font:14px monospace;white-space:pre-wrap;';
-      d.textContent = 'UNHANDLED REJECTION: ' + (e.reason?.message || e.reason || 'unknown');
-      document.body.prepend(d);
-    });
+    // Debug error overlay — dev mode only (localhost)
+    if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') {
+      window.onerror = function(msg, url, line, col, err) {
+        var d = document.createElement('div');
+        d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:red;color:white;padding:12px;font:14px monospace;white-space:pre-wrap;';
+        d.textContent = 'JS ERROR: ' + msg + '\n' + (url||'').split('/').pop() + ':' + line + ':' + col;
+        document.body.prepend(d);
+      };
+      window.addEventListener('unhandledrejection', function(e) {
+        var d = document.createElement('div');
+        d.style.cssText = 'position:fixed;top:40px;left:0;right:0;z-index:99999;background:orange;color:black;padding:12px;font:14px monospace;white-space:pre-wrap;';
+        d.textContent = 'UNHANDLED REJECTION: ' + (e.reason?.message || e.reason || 'unknown');
+        document.body.prepend(d);
+      });
+    }
   </script>
   <div id="app">
     <!-- ===== Screen: Loading ===== -->
