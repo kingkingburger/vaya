@@ -504,6 +504,31 @@ const rpc = Electroview.defineRPC<VayaRPC>({
 
 const electroview = new Electroview({ rpc });
 
+// ===== Auto-fetch backend status on webview init =====
+// The Electroview WebSocket to bun is async, so we retry until connected.
+async function initBackendStatus(retries = 20, interval = 500) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const health = await electroview.rpc.request.getBackendStatus({});
+      if (health.status === "ok") {
+        gpuAvailable = health.gpu_available;
+        nvencAvailable = health.nvenc_available;
+        updateGpuText();
+        showScreen("drop");
+      } else {
+        errorMessage.textContent = "백엔드가 아직 준비되지 않았습니다";
+        showScreen("error");
+      }
+      return;
+    } catch {
+      await new Promise(r => setTimeout(r, interval));
+    }
+  }
+  errorMessage.textContent = "백엔드 연결 실패";
+  showScreen("error");
+}
+initBackendStatus();
+
 // ===== Retry button =====
 retryBtn.addEventListener("click", () => {
   showScreen("loading");

@@ -29,6 +29,11 @@ cd backend && uv run pytest              # Run tests (34 tests)
 # Frontend
 npx electrobun dev                        # Dev mode
 npx electrobun build                      # Production build
+
+# E2E Tests (backend 실행 상태에서)
+cd backend && uv run pytest ../tests/e2e/test_backend_e2e.py -v   # 백엔드 E2E (15 tests)
+cd backend && uv run pytest ../tests/e2e/test_frontend_e2e.py -v  # 프론트엔드 Playwright E2E (15 tests)
+cd backend && uv run pytest ../tests/e2e/ -v                      # 전체 E2E (30 tests)
 ```
 
 ## Architecture
@@ -37,6 +42,14 @@ npx electrobun build                      # Production build
 - In-memory store: `_videos: dict[str, dict]` (no database for MVP)
 - WebSocket: `/ws/progress/{video_id}` for real-time progress
 - Static files: `/static/thumbnails/{id}/` for thumbnail serving
+
+## E2E 테스트 아키텍처
+- `tests/e2e/electrobun_mock.js`: Electroview 클래스를 HTTP 직접 호출로 대체하는 목
+- `tests/e2e/serve_frontend.py`: 빌드된 main.js에서 Electroview를 regex로 목으로 교체하여 서빙
+- `tests/e2e/conftest.py`: backend(8765) + frontend(8766) 서버 자동 시작/종료
+- `tests/fixtures/sample.mp4`: 10초 테스트 비디오 (640x360, 30fps)
+- Electrobun RPC 프로토콜: `{type:'message', id:name, payload:data}`, `{type:'response', id, success, payload}`
+- 목의 `defineRPC`는 번들에 보존된 `defineElectrobunRPC`에 위임
 
 ## Conventions
 - Routers register in `backend/main.py`

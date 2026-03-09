@@ -73,28 +73,24 @@ console.log("[main] Starting Vaya...");
 const backendReady = await spawnPython();
 const health = backendReady ? await getBackendHealth() : null;
 
-// Send status to webview with retry mechanism
-// The webview may not be ready immediately, so we retry a few times
-async function sendStatusToWebview(retries = 10, interval = 500) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      if (health) {
-        win.webview.rpc.backendReady({
-          status: health.status,
-          gpu_available: health.gpu_available,
-          nvenc_available: health.nvenc_available,
-        });
-      } else {
-        win.webview.rpc.backendError({ error: "Failed to start backend server" });
-      }
-      console.log("[main] Status sent to webview successfully");
-      return;
-    } catch (e) {
-      console.log(`[main] Webview not ready (attempt ${i + 1}/${retries}), retrying...`);
-      await Bun.sleep(interval);
+// The webview now pulls backend status via getBackendStatus RPC request on init.
+// This push is kept as a best-effort fallback only.
+async function sendStatusToWebview() {
+  await Bun.sleep(2000);
+  try {
+    if (health) {
+      win.webview.rpc.backendReady({
+        status: health.status,
+        gpu_available: health.gpu_available,
+        nvenc_available: health.nvenc_available,
+      });
+      console.log("[main] Status pushed to webview (fallback)");
+    } else {
+      win.webview.rpc.backendError({ error: "Failed to start backend server" });
     }
+  } catch (e) {
+    console.log("[main] Fallback push failed (webview will pull status via RPC)");
   }
-  console.error("[main] Failed to send status to webview after all retries");
 }
 
 sendStatusToWebview();
