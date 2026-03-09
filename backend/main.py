@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 import uvicorn
 
-from routers import health, settings
+from routers import health, settings, upload, video, analyze, subtitle, export
 
 app = FastAPI(title="Vaya", version="0.1.0")
 
@@ -25,6 +25,11 @@ app.mount("/static", StaticFiles(directory=str(storage_path)), name="static")
 # Routers
 app.include_router(health.router)
 app.include_router(settings.router)
+app.include_router(upload.router)
+app.include_router(video.router)
+app.include_router(analyze.router)
+app.include_router(subtitle.router)
+app.include_router(export.router)
 
 
 if __name__ == "__main__":

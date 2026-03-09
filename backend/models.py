@@ -44,6 +44,7 @@ class ExportRequest(BaseModel):
     youtube: bool = True
     shorts: bool = False
     subtitles: bool = True
+    crop_offset: int = 0
 
 
 class ProgressMessage(BaseModel):

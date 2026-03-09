@@ -30,6 +30,10 @@ export type VayaRPC = {
           thumbnail_count: number;
         };
       };
+      openFolder: {
+        params: { path: string };
+        response: boolean;
+      };
     };
     messages: {
       log: { msg: string };

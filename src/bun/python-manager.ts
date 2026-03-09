@@ -50,7 +50,29 @@ function findUvPath(): string {
   return "uv"; // Default, hope it's in PATH
 }
 
+/**
+ * Check if an existing server is already running on the backend port.
+ * If so, try to reuse it instead of spawning a new process.
+ */
+async function checkExistingServer(): Promise<boolean> {
+  try {
+    const res = await fetch(HEALTH_ENDPOINT);
+    if (res.ok) {
+      console.log("[python-manager] Existing backend server found, reusing it");
+      return true;
+    }
+  } catch {
+    // No existing server
+  }
+  return false;
+}
+
 export async function spawnPython(): Promise<boolean> {
+  // First, check if a server is already running on the port
+  if (await checkExistingServer()) {
+    return true;
+  }
+
   const projectRoot = getProjectRoot();
   const backendDir = join(projectRoot, "backend");
 

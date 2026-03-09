@@ -29,6 +29,18 @@ const rpc = BrowserView.defineRPC<VayaRPC>({
         return result ?? null;
       },
 
+      openFolder: async ({ path }) => {
+        const { exec } = await import("child_process");
+        // Open folder in OS file explorer
+        const cmd = process.platform === "win32"
+          ? `explorer "${path}"`
+          : process.platform === "darwin"
+            ? `open "${path}"`
+            : `xdg-open "${path}"`;
+        exec(cmd);
+        return true;
+      },
+
       uploadVideo: async ({ filePath }) => {
         const res = await fetch(`${getBackendUrl()}/api/upload`, {
           method: "POST",
@@ -61,22 +73,31 @@ console.log("[main] Starting Vaya...");
 const backendReady = await spawnPython();
 const health = backendReady ? await getBackendHealth() : null;
 
-// Send status to webview after a short delay to ensure webview is loaded
-setTimeout(() => {
-  try {
-    if (health) {
-      win.webview.rpc.backendReady({
-        status: health.status,
-        gpu_available: health.gpu_available,
-        nvenc_available: health.nvenc_available,
-      });
-    } else {
-      win.webview.rpc.backendError({ error: "Failed to start backend server" });
+// Send status to webview with retry mechanism
+// The webview may not be ready immediately, so we retry a few times
+async function sendStatusToWebview(retries = 10, interval = 500) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      if (health) {
+        win.webview.rpc.backendReady({
+          status: health.status,
+          gpu_available: health.gpu_available,
+          nvenc_available: health.nvenc_available,
+        });
+      } else {
+        win.webview.rpc.backendError({ error: "Failed to start backend server" });
+      }
+      console.log("[main] Status sent to webview successfully");
+      return;
+    } catch (e) {
+      console.log(`[main] Webview not ready (attempt ${i + 1}/${retries}), retrying...`);
+      await Bun.sleep(interval);
     }
-  } catch (e) {
-    console.error("[main] Failed to send status to webview:", e);
   }
-}, 2000);
+  console.error("[main] Failed to send status to webview after all retries");
+}
+
+sendStatusToWebview();
 
 // Cleanup on window close
 win.on("close", () => {
