@@ -1,0 +1,1670 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vaya - User Flow Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-primary: #0a0a0c;
+  --bg-secondary: #111116;
+  --bg-tertiary: #18181f;
+  --bg-panel: #13131a;
+  --border: #2a2a35;
+  --border-hover: #3a3a48;
+  --text-primary: #e8e8ed;
+  --text-secondary: #8888a0;
+  --text-muted: #55556a;
+  --accent: #ff6b35;
+  --accent-dim: #ff6b3520;
+  --accent-glow: #ff6b3540;
+  --highlight: #ff6b3580;
+  --highlight-manual: #35b5ff80;
+  --success: #35c759;
+  --error: #ff3b5c;
+  --warning: #ffb340;
+  --progress-bg: #1e1e28;
+  --scrollbar: #2a2a35;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* ===== Screen Container ===== */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+.screen.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ===== Navigation Bar ===== */
+.demo-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: #0d0d12ee;
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.demo-nav-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  margin-right: 12px;
+  white-space: nowrap;
+}
+.demo-nav-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-family: 'Noto Sans KR', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.demo-nav-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+  background: var(--accent-dim);
+}
+.demo-nav-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+.demo-nav-scroll {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  flex: 1;
+}
+.demo-nav-scroll::-webkit-scrollbar { height: 0; }
+
+/* ===== Screen 1: Loading ===== */
+.loading-screen {
+  flex-direction: column;
+  gap: 32px;
+  background: var(--bg-primary);
+}
+.loading-logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: 12px;
+  color: var(--text-primary);
+  position: relative;
+}
+.loading-logo::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+.loading-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+.loading-detail {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ===== Screen 2: Backend Error ===== */
+.error-screen {
+  flex-direction: column;
+  gap: 24px;
+  background: var(--bg-primary);
+}
+.error-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid var(--error);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: var(--error);
+  animation: pulse-error 2s ease infinite;
+}
+@keyframes pulse-error {
+  0%, 100% { box-shadow: 0 0 0 0 #ff3b5c40; }
+  50% { box-shadow: 0 0 0 12px #ff3b5c00; }
+}
+.error-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.error-message {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.6;
+  max-width: 360px;
+}
+.error-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.btn-retry {
+  padding: 10px 32px;
+  background: var(--error);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-retry:hover { filter: brightness(1.15); transform: translateY(-1px); }
+
+/* ===== Screen 3: Drag & Drop ===== */
+.drop-screen {
+  flex-direction: column;
+  gap: 0;
+  background: var(--bg-primary);
+}
+.drop-titlebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 36px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+}
+.drop-titlebar-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+}
+.drop-zone {
+  width: 520px;
+  height: 320px;
+  border: 2px dashed var(--border);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  transition: all 0.3s;
+  cursor: pointer;
+  position: relative;
+}
+.drop-zone:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+.drop-zone:hover .drop-icon { color: var(--accent); transform: translateY(-4px); }
+.drop-icon {
+  font-size: 56px;
+  color: var(--text-muted);
+  transition: all 0.3s;
+}
+.drop-text {
+  font-size: 16px;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+.drop-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.drop-btn {
+  padding: 8px 24px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.drop-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.drop-formats {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+/* ===== Screen 4: Analyzing ===== */
+.analyze-screen {
+  flex-direction: column;
+  background: var(--bg-primary);
+}
+.app-shell {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.app-titlebar {
+  height: 36px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  flex-shrink: 0;
+}
+.app-titlebar-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+}
+
+/* Progress Banner */
+.progress-banner {
+  background: linear-gradient(90deg, var(--accent-dim), var(--bg-tertiary));
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.progress-banner-text {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.progress-bar-container {
+  flex: 1;
+  height: 6px;
+  background: var(--progress-bg);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent), #ff9a5c);
+  transition: width 0.5s ease;
+}
+.progress-percent {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  min-width: 36px;
+  text-align: right;
+}
+.progress-step {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Main Content Area */
+.app-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Left Panel */
+.panel-left {
+  width: 280px;
+  border-right: 1px solid var(--border);
+  background: var(--bg-panel);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.panel-section {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.video-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+.video-info-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.video-info-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-primary);
+}
+.video-filename {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-bottom: 8px;
+  word-break: break-all;
+}
+
+/* Highlight List */
+.highlight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.highlight-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+.highlight-item:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border);
+}
+.highlight-item.manual {
+  border-left: 2px solid #35b5ff;
+}
+.highlight-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.highlight-item.manual .highlight-badge {
+  background: #35b5ff20;
+  color: #35b5ff;
+}
+.highlight-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-primary);
+}
+.highlight-duration {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+.highlight-delete {
+  opacity: 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+.highlight-item:hover .highlight-delete { opacity: 1; }
+.highlight-delete:hover { color: var(--error); }
+
+.btn-add-segment {
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Noto Sans KR', sans-serif;
+  margin-top: 4px;
+}
+.btn-add-segment:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+/* Right Panel */
+.panel-right {
+  width: 260px;
+  border-left: 1px solid var(--border);
+  background: var(--bg-panel);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+/* Slider Control */
+.slider-group {
+  margin-bottom: 14px;
+}
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.slider-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.slider-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+}
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--progress-bg);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* Checkbox */
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+.checkbox-box {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.checkbox-box.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.checkbox-box.checked::after {
+  content: '✓';
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+}
+.checkbox-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.checkbox-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Shorts offset */
+.offset-control {
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.offset-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+/* Export Button */
+.btn-export {
+  width: 100%;
+  padding: 12px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Noto Sans KR', sans-serif;
+  letter-spacing: 1px;
+}
+.btn-export:hover { filter: brightness(1.15); transform: translateY(-1px); }
+.btn-export:active { transform: translateY(0); }
+.btn-export:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
+/* Settings folder */
+.setting-folder-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+.setting-folder-path {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-secondary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.setting-folder-btn {
+  font-size: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  transition: all 0.15s;
+}
+.setting-folder-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+/* Timeline */
+.timeline-area {
+  height: 140px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin-bottom: 52px;
+}
+.timeline-toolbar {
+  height: 28px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 12px;
+}
+.timeline-toolbar-btn {
+  font-size: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+  font-family: 'JetBrains Mono', monospace;
+  border: none;
+  background: transparent;
+}
+.timeline-toolbar-btn:hover { color: var(--text-primary); background: var(--bg-panel); }
+.timeline-time-labels {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 12px;
+  height: 18px;
+  align-items: center;
+}
+.timeline-time-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-muted);
+}
+.timeline-track {
+  flex: 1;
+  margin: 0 12px;
+  position: relative;
+  background: var(--bg-primary);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+}
+.timeline-thumb {
+  height: 100%;
+  flex: 1;
+  background-size: cover;
+  background-position: center;
+  border-right: 1px solid var(--bg-primary);
+  position: relative;
+}
+.timeline-thumb-img {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+.timeline-highlight-overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--highlight);
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  cursor: ew-resize;
+  transition: background 0.15s;
+}
+.timeline-highlight-overlay:hover {
+  background: #ff6b35a0;
+}
+.timeline-highlight-overlay.manual {
+  background: var(--highlight-manual);
+  border-color: #35b5ff;
+}
+.timeline-highlight-overlay.manual:hover {
+  background: #35b5ffa0;
+}
+.timeline-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 11px;
+  gap: 8px;
+}
+.timeline-loading-spinner {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Center area (placeholder) */
+.center-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  position: relative;
+}
+.center-placeholder {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.8;
+}
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed;
+  top: 48px;
+  right: 24px;
+  z-index: 999;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-primary);
+  box-shadow: 0 8px 32px #00000060;
+  transform: translateY(-20px);
+  opacity: 0;
+  transition: all 0.3s;
+  pointer-events: none;
+}
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: all;
+}
+.toast-icon { font-size: 16px; }
+.toast.warning { border-color: var(--warning); }
+.toast.warning .toast-icon { color: var(--warning); }
+.toast.success { border-color: var(--success); }
+.toast.success .toast-icon { color: var(--success); }
+.toast.info { border-color: var(--accent); }
+.toast.info .toast-icon { color: var(--accent); }
+
+/* ===== Subtitle Panel (in left panel) ===== */
+.subtitle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+.subtitle-item {
+  display: flex;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  align-items: flex-start;
+}
+.subtitle-item:hover { background: var(--bg-tertiary); }
+.subtitle-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding-top: 1px;
+}
+.subtitle-text {
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* ===== Export Progress Overlay ===== */
+.export-overlay {
+  position: absolute;
+  inset: 0;
+  background: #0a0a0c90;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== Export Complete ===== */
+.export-complete-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 16px 64px #00000080;
+}
+.export-check {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #35c75920;
+  border: 2px solid var(--success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: var(--success);
+}
+.export-files {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.export-file-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-panel);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.export-file-icon { font-size: 14px; }
+.export-file-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-primary);
+  flex: 1;
+}
+.export-file-size {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.btn-open-folder {
+  padding: 10px 28px;
+  background: var(--success);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.btn-open-folder:hover { filter: brightness(1.15); transform: translateY(-1px); }
+
+/* Warning modal */
+.long-video-warning {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #0a0a0c80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.warning-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--warning);
+  border-radius: 12px;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 360px;
+  box-shadow: 0 12px 48px #00000060;
+}
+.warning-icon { font-size: 32px; color: var(--warning); }
+.warning-title { font-size: 15px; font-weight: 500; }
+.warning-text { font-size: 12px; color: var(--text-secondary); text-align: center; line-height: 1.6; }
+.warning-actions { display: flex; gap: 8px; }
+.btn-warning-cancel {
+  padding: 8px 20px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.btn-warning-proceed {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  background: var(--warning);
+  color: #000;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+/* ===== Disabled state during export ===== */
+.disabled-overlay {
+  pointer-events: none;
+  opacity: 0.5;
+}
+</style>
+</head>
+<body>
+
+<!-- Toast Notification -->
+<div id="toast" class="toast">
+  <span class="toast-icon"></span>
+  <span class="toast-text"></span>
+</div>
+
+<!-- Screen 1: Loading -->
+<div id="screen-loading" class="screen active">
+  <div class="loading-screen">
+    <div class="loading-logo">VAYA</div>
+    <div class="loading-status">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">서버 시작 중...</div>
+      <div class="loading-detail mono">Python backend · localhost:8765</div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 2: Backend Error -->
+<div id="screen-error" class="screen">
+  <div class="error-screen">
+    <div class="error-icon">!</div>
+    <div class="error-title">백엔드 연결 실패</div>
+    <div class="error-message">
+      Python 서버에 연결할 수 없습니다.<br>
+      서버가 시작되지 않았거나 포트가 사용 중일 수 있습니다.
+    </div>
+    <div class="error-code mono">Connection refused · localhost:8765</div>
+    <button class="btn-retry" onclick="goTo('screen-loading')">재시도</button>
+  </div>
+</div>
+
+<!-- Screen 3: Drag & Drop -->
+<div id="screen-drop" class="screen">
+  <div class="drop-screen">
+    <div class="drop-titlebar">
+      <div class="drop-titlebar-text">VAYA</div>
+    </div>
+    <div class="drop-zone" onclick="goTo('screen-analyzing')">
+      <div class="drop-icon">🎬</div>
+      <div class="drop-text">영상 파일을 여기에 드래그하세요</div>
+      <div class="drop-sub">또는 클릭하여 파일 선택</div>
+      <button class="drop-btn">파일 선택</button>
+      <div class="drop-formats">MP4 · MKV · MOV · WEBM</div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 4: Analyzing -->
+<div id="screen-analyzing" class="screen">
+  <div class="app-shell">
+    <div class="app-titlebar">
+      <div class="app-titlebar-text">VAYA</div>
+    </div>
+    <div class="progress-banner">
+      <div class="progress-banner-text">분석 중</div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="analyze-progress" style="width: 45%"></div>
+      </div>
+      <div class="progress-percent mono" id="analyze-percent">45%</div>
+      <div class="progress-step">♪ 오디오 분석 중...</div>
+    </div>
+    <div class="app-content">
+      <!-- Left: Video Info -->
+      <div class="panel-left">
+        <div class="panel-section">
+          <div class="panel-section-title">영상 정보</div>
+          <div class="video-filename">gameplay_2026-03-09.mp4</div>
+          <div class="video-info-row">
+            <span class="video-info-label">해상도</span>
+            <span class="video-info-value mono">1920×1080</span>
+          </div>
+          <div class="video-info-row">
+            <span class="video-info-label">FPS</span>
+            <span class="video-info-value mono">60</span>
+          </div>
+          <div class="video-info-row">
+            <span class="video-info-label">길이</span>
+            <span class="video-info-value mono">42:30</span>
+          </div>
+          <div class="video-info-row">
+            <span class="video-info-label">크기</span>
+            <span class="video-info-value mono">2.8 GB</span>
+          </div>
+        </div>
+        <div class="panel-section">
+          <div class="panel-section-title">하이라이트 구간</div>
+          <div style="color: var(--text-muted); font-size: 11px; text-align: center; padding: 20px 0;">
+            분석 완료 후 표시됩니다
+          </div>
+        </div>
+        <div class="panel-section">
+          <div class="panel-section-title">자막 (Whisper)</div>
+          <div style="color: var(--text-muted); font-size: 11px; text-align: center; padding: 12px 0; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <div class="timeline-loading-spinner"></div>
+            생성 중...
+          </div>
+        </div>
+      </div>
+
+      <!-- Center -->
+      <div class="center-area">
+        <div class="center-placeholder">
+          분석이 완료되면<br>타임라인에서 구간을 편집할 수 있습니다
+        </div>
+      </div>
+
+      <!-- Right: Settings -->
+      <div class="panel-right">
+        <div class="panel-section">
+          <div class="panel-section-title">분석 설정</div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">오디오 가중치</span>
+              <span class="slider-value mono">0.6</span>
+            </div>
+            <input type="range" min="0" max="100" value="60">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">영상 가중치</span>
+              <span class="slider-value mono">0.4</span>
+            </div>
+            <input type="range" min="0" max="100" value="40">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">상위 구간</span>
+              <span class="slider-value mono">30%</span>
+            </div>
+            <input type="range" min="5" max="80" value="30">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">무음 기준</span>
+              <span class="slider-value mono">-40dB</span>
+            </div>
+            <input type="range" min="0" max="100" value="40">
+          </div>
+        </div>
+        <div class="panel-section">
+          <div class="panel-section-title">내보내기</div>
+          <div class="setting-folder-row">
+            <span class="setting-folder-path">~/Videos/Vaya/</span>
+            <button class="setting-folder-btn">변경</button>
+          </div>
+          <div class="checkbox-row">
+            <div class="checkbox-box checked"></div>
+            <span class="checkbox-label">YouTube (16:9)</span>
+            <span class="checkbox-sub">1080p 60fps</span>
+          </div>
+          <div class="checkbox-row">
+            <div class="checkbox-box checked"></div>
+            <span class="checkbox-label">Shorts (9:16)</span>
+            <span class="checkbox-sub">1080×1920</span>
+          </div>
+          <div class="offset-control">
+            <div class="offset-label mono">SHORTS 크롭 오프셋</div>
+            <div class="slider-group" style="margin-bottom:0">
+              <div class="slider-header">
+                <span class="slider-label" style="font-size:10px">← 좌</span>
+                <span class="slider-value mono" style="font-size:10px">중앙</span>
+                <span class="slider-label" style="font-size:10px">우 →</span>
+              </div>
+              <input type="range" min="0" max="100" value="50">
+            </div>
+          </div>
+          <div class="checkbox-row" style="margin-top: 4px;">
+            <div class="checkbox-box checked"></div>
+            <span class="checkbox-label">자막 포함</span>
+          </div>
+          <button class="btn-export" disabled style="margin-top: 12px;">분석 중...</button>
+        </div>
+      </div>
+    </div>
+    <!-- Timeline -->
+    <div class="timeline-area">
+      <div class="timeline-toolbar">
+        <button class="timeline-toolbar-btn">◀ Ctrl+Z</button>
+        <button class="timeline-toolbar-btn">Ctrl+Y ▶</button>
+        <span style="flex:1"></span>
+        <button class="timeline-toolbar-btn">🔍 확대</button>
+        <button class="timeline-toolbar-btn">🔍 축소</button>
+      </div>
+      <div class="timeline-time-labels">
+        <span class="timeline-time-label">00:00</span>
+        <span class="timeline-time-label">10:00</span>
+        <span class="timeline-time-label">20:00</span>
+        <span class="timeline-time-label">30:00</span>
+        <span class="timeline-time-label">42:30</span>
+      </div>
+      <div class="timeline-track">
+        <div class="timeline-loading">
+          <div class="timeline-loading-spinner"></div>
+          썸네일 생성 중...
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 5: Main (Analysis Complete) -->
+<div id="screen-main" class="screen">
+  <div class="app-shell">
+    <div class="app-titlebar">
+      <div class="app-titlebar-text">VAYA</div>
+    </div>
+    <div class="app-content" id="main-content">
+      <!-- Left: Video Info + Highlights -->
+      <div class="panel-left">
+        <div class="panel-section">
+          <div class="panel-section-title">영상 정보</div>
+          <div class="video-filename">gameplay_2026-03-09.mp4</div>
+          <div class="video-info-row">
+            <span class="video-info-label">해상도</span>
+            <span class="video-info-value mono">1920×1080</span>
+          </div>
+          <div class="video-info-row">
+            <span class="video-info-label">FPS</span>
+            <span class="video-info-value mono">60</span>
+          </div>
+          <div class="video-info-row">
+            <span class="video-info-label">길이</span>
+            <span class="video-info-value mono">42:30</span>
+          </div>
+          <div class="video-info-row">
+            <span class="video-info-label">크기</span>
+            <span class="video-info-value mono">2.8 GB</span>
+          </div>
+        </div>
+        <div class="panel-section">
+          <div class="panel-section-title">하이라이트 구간 <span style="color:var(--accent);font-size:10px;margin-left:4px;">5개</span></div>
+          <div class="highlight-list">
+            <div class="highlight-item">
+              <div class="highlight-badge">1</div>
+              <span class="highlight-time">01:23 – 01:45</span>
+              <span class="highlight-duration">22s</span>
+              <span class="highlight-delete">×</span>
+            </div>
+            <div class="highlight-item">
+              <div class="highlight-badge">2</div>
+              <span class="highlight-time">05:12 – 05:48</span>
+              <span class="highlight-duration">36s</span>
+              <span class="highlight-delete">×</span>
+            </div>
+            <div class="highlight-item">
+              <div class="highlight-badge">3</div>
+              <span class="highlight-time">12:01 – 12:30</span>
+              <span class="highlight-duration">29s</span>
+              <span class="highlight-delete">×</span>
+            </div>
+            <div class="highlight-item">
+              <div class="highlight-badge">4</div>
+              <span class="highlight-time">28:44 – 29:15</span>
+              <span class="highlight-duration">31s</span>
+              <span class="highlight-delete">×</span>
+            </div>
+            <div class="highlight-item manual">
+              <div class="highlight-badge">M</div>
+              <span class="highlight-time">35:10 – 35:42</span>
+              <span class="highlight-duration">32s</span>
+              <span class="highlight-delete">×</span>
+            </div>
+            <button class="btn-add-segment">+ 구간 추가</button>
+          </div>
+        </div>
+        <div class="panel-section">
+          <div class="panel-section-title">자막 <span style="color:var(--success);font-size:10px;margin-left:4px;">✓ 완료</span></div>
+          <div class="subtitle-list">
+            <div class="subtitle-item">
+              <span class="subtitle-time">01:24</span>
+              <span class="subtitle-text">와 이거 진짜 미쳤다</span>
+            </div>
+            <div class="subtitle-item">
+              <span class="subtitle-time">05:15</span>
+              <span class="subtitle-text">여기서 이렇게 가면 되지 않나?</span>
+            </div>
+            <div class="subtitle-item">
+              <span class="subtitle-time">12:05</span>
+              <span class="subtitle-text">아 진짜 개쩐다 ㅋㅋ</span>
+            </div>
+            <div class="subtitle-item">
+              <span class="subtitle-time">28:50</span>
+              <span class="subtitle-text">이거 진짜 실화냐</span>
+            </div>
+            <div class="subtitle-item">
+              <span class="subtitle-time">35:20</span>
+              <span class="subtitle-text">마지막 한판 가자</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center -->
+      <div class="center-area">
+        <div class="center-placeholder">
+          타임라인에서 하이라이트 구간을 확인하고<br>
+          드래그로 조절하세요<br><br>
+          <span style="color:var(--accent)">■</span> 자동 감지 구간 &nbsp;
+          <span style="color:#35b5ff">■</span> 수동 추가 구간
+        </div>
+      </div>
+
+      <!-- Right: Settings -->
+      <div class="panel-right" id="main-panel-right">
+        <div class="panel-section">
+          <div class="panel-section-title">분석 설정</div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">오디오 가중치</span>
+              <span class="slider-value mono">0.6</span>
+            </div>
+            <input type="range" min="0" max="100" value="60" oninput="showToast('info', 'ℹ️', '수동 구간은 유지됩니다. 자동 구간만 재계산됩니다.')">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">영상 가중치</span>
+              <span class="slider-value mono">0.4</span>
+            </div>
+            <input type="range" min="0" max="100" value="40">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">상위 구간</span>
+              <span class="slider-value mono">30%</span>
+            </div>
+            <input type="range" min="5" max="80" value="30">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">무음 기준</span>
+              <span class="slider-value mono">-40dB</span>
+            </div>
+            <input type="range" min="0" max="100" value="40">
+          </div>
+        </div>
+        <div class="panel-section">
+          <div class="panel-section-title">내보내기</div>
+          <div class="setting-folder-row">
+            <span class="setting-folder-path">~/Videos/Vaya/</span>
+            <button class="setting-folder-btn">변경</button>
+          </div>
+          <div class="checkbox-row" onclick="this.querySelector('.checkbox-box').classList.toggle('checked')">
+            <div class="checkbox-box checked"></div>
+            <span class="checkbox-label">YouTube (16:9)</span>
+            <span class="checkbox-sub">1080p 60fps</span>
+          </div>
+          <div class="checkbox-row" onclick="this.querySelector('.checkbox-box').classList.toggle('checked')">
+            <div class="checkbox-box checked"></div>
+            <span class="checkbox-label">Shorts (9:16)</span>
+            <span class="checkbox-sub">1080×1920</span>
+          </div>
+          <div class="offset-control">
+            <div class="offset-label mono">SHORTS 크롭 오프셋</div>
+            <div class="slider-group" style="margin-bottom:0">
+              <div class="slider-header">
+                <span class="slider-label" style="font-size:10px">← 좌</span>
+                <span class="slider-value mono" style="font-size:10px">중앙</span>
+                <span class="slider-label" style="font-size:10px">우 →</span>
+              </div>
+              <input type="range" min="0" max="100" value="50">
+            </div>
+          </div>
+          <div class="checkbox-row" style="margin-top: 4px;" onclick="this.querySelector('.checkbox-box').classList.toggle('checked')">
+            <div class="checkbox-box checked"></div>
+            <span class="checkbox-label">자막 포함</span>
+          </div>
+          <button class="btn-export" style="margin-top: 12px;" onclick="goTo('screen-exporting')">내보내기</button>
+        </div>
+      </div>
+    </div>
+    <!-- Timeline with thumbnails -->
+    <div class="timeline-area" id="main-timeline">
+      <div class="timeline-toolbar">
+        <button class="timeline-toolbar-btn">◀ Ctrl+Z</button>
+        <button class="timeline-toolbar-btn">Ctrl+Y ▶</button>
+        <span style="flex:1"></span>
+        <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">클릭: 선택 · 드래그: 구간 조절 · 빈 영역 클릭: 추가</span>
+        <span style="flex:1"></span>
+        <button class="timeline-toolbar-btn">🔍+</button>
+        <button class="timeline-toolbar-btn">🔍−</button>
+      </div>
+      <div class="timeline-time-labels">
+        <span class="timeline-time-label">00:00</span>
+        <span class="timeline-time-label">10:00</span>
+        <span class="timeline-time-label">20:00</span>
+        <span class="timeline-time-label">30:00</span>
+        <span class="timeline-time-label">42:30</span>
+      </div>
+      <div class="timeline-track" style="position:relative;">
+        <!-- Thumbnails -->
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1a1520">0:00</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1c1722">0:05</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1a1820">0:10</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1d1525">0:15</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1b1620">0:20</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1a1722">0:25</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1e1828">0:30</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1c1520">0:35</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1a1622">0:40</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1d1825">0:45</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1b1720">0:50</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1a1522">0:55</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1c1828">1:00</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1e1520">1:05</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1a1625">1:10</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1d1722">1:15</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1b1820">1:20</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1a1528">1:25</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1c1620">1:30</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1e1725">1:35</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1a1822">1:40</div></div>
+        <!-- Highlight overlays -->
+        <div class="timeline-highlight-overlay" style="left:3%;width:2.5%;" title="#1 01:23-01:45"></div>
+        <div class="timeline-highlight-overlay" style="left:12%;width:3.5%;" title="#2 05:12-05:48"></div>
+        <div class="timeline-highlight-overlay" style="left:28%;width:2.8%;" title="#3 12:01-12:30"></div>
+        <div class="timeline-highlight-overlay" style="left:67%;width:3%;" title="#4 28:44-29:15"></div>
+        <div class="timeline-highlight-overlay manual" style="left:82%;width:3.2%;" title="M 35:10-35:42 (수동)"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 6: Exporting -->
+<div id="screen-exporting" class="screen">
+  <div class="app-shell">
+    <div class="app-titlebar">
+      <div class="app-titlebar-text">VAYA</div>
+    </div>
+    <div class="progress-banner" style="background: linear-gradient(90deg, #ff6b3515, var(--bg-tertiary));">
+      <div class="progress-banner-text">내보내는 중</div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="export-progress" style="width: 62%"></div>
+      </div>
+      <div class="progress-percent mono">62%</div>
+      <div class="progress-step">1/2 · YouTube용 인코딩 중...</div>
+    </div>
+    <div class="app-content disabled-overlay">
+      <div class="panel-left">
+        <div class="panel-section">
+          <div class="panel-section-title">영상 정보</div>
+          <div class="video-filename">gameplay_2026-03-09.mp4</div>
+          <div class="video-info-row">
+            <span class="video-info-label">해상도</span>
+            <span class="video-info-value mono">1920×1080</span>
+          </div>
+          <div class="video-info-row">
+            <span class="video-info-label">길이</span>
+            <span class="video-info-value mono">42:30</span>
+          </div>
+        </div>
+        <div class="panel-section">
+          <div class="panel-section-title">하이라이트 구간 <span style="color:var(--accent);font-size:10px">5개</span></div>
+          <div class="highlight-list">
+            <div class="highlight-item">
+              <div class="highlight-badge">1</div>
+              <span class="highlight-time">01:23 – 01:45</span>
+              <span class="highlight-duration">22s</span>
+            </div>
+            <div class="highlight-item">
+              <div class="highlight-badge">2</div>
+              <span class="highlight-time">05:12 – 05:48</span>
+              <span class="highlight-duration">36s</span>
+            </div>
+            <div class="highlight-item">
+              <div class="highlight-badge">3</div>
+              <span class="highlight-time">12:01 – 12:30</span>
+              <span class="highlight-duration">29s</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="center-area">
+        <div class="center-placeholder">내보내는 중... 편집이 비활성화됩니다</div>
+      </div>
+      <div class="panel-right">
+        <div class="panel-section">
+          <div class="panel-section-title">내보내기</div>
+          <div class="checkbox-row">
+            <div class="checkbox-box checked"></div>
+            <span class="checkbox-label">YouTube (16:9)</span>
+            <span class="checkbox-sub" style="color:var(--accent)">진행 중</span>
+          </div>
+          <div class="checkbox-row">
+            <div class="checkbox-box checked"></div>
+            <span class="checkbox-label">Shorts (9:16)</span>
+            <span class="checkbox-sub">대기 중</span>
+          </div>
+          <div class="checkbox-row">
+            <div class="checkbox-box checked"></div>
+            <span class="checkbox-label">자막 포함</span>
+          </div>
+          <button class="btn-export" disabled style="margin-top:12px; background:var(--border);">내보내는 중...</button>
+        </div>
+      </div>
+    </div>
+    <div class="timeline-area" style="opacity:0.5;pointer-events:none;">
+      <div class="timeline-toolbar">
+        <button class="timeline-toolbar-btn">◀ Ctrl+Z</button>
+        <button class="timeline-toolbar-btn">Ctrl+Y ▶</button>
+      </div>
+      <div class="timeline-time-labels">
+        <span class="timeline-time-label">00:00</span>
+        <span class="timeline-time-label">10:00</span>
+        <span class="timeline-time-label">20:00</span>
+        <span class="timeline-time-label">30:00</span>
+        <span class="timeline-time-label">42:30</span>
+      </div>
+      <div class="timeline-track" style="position:relative;">
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1a1520">0:00</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1c1722">0:05</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1a1820">0:10</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1d1525">0:15</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1b1620">0:20</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1a1722">0:25</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1e1828">0:30</div></div>
+        <div class="timeline-thumb"><div class="timeline-thumb-img" style="background:#1c1520">0:35</div></div>
+        <div class="timeline-highlight-overlay" style="left:3%;width:2.5%;"></div>
+        <div class="timeline-highlight-overlay" style="left:12%;width:3.5%;"></div>
+        <div class="timeline-highlight-overlay" style="left:28%;width:2.8%;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 7: Export Complete -->
+<div id="screen-complete" class="screen">
+  <div class="app-shell">
+    <div class="app-titlebar">
+      <div class="app-titlebar-text">VAYA</div>
+    </div>
+    <div class="app-content" style="position:relative;">
+      <div class="panel-left" style="opacity:0.3;">
+        <div class="panel-section">
+          <div class="panel-section-title">영상 정보</div>
+          <div class="video-filename">gameplay_2026-03-09.mp4</div>
+        </div>
+      </div>
+      <div class="center-area">
+        <!-- Complete overlay -->
+        <div class="export-complete-card">
+          <div class="export-check">✓</div>
+          <div style="font-size:16px;font-weight:500;">내보내기 완료</div>
+          <div class="export-files">
+            <div class="export-file-row">
+              <span class="export-file-icon">🎬</span>
+              <span class="export-file-name">gameplay_2026-03-09_20260309_youtube.mp4</span>
+              <span class="export-file-size">245 MB</span>
+            </div>
+            <div class="export-file-row">
+              <span class="export-file-icon">📱</span>
+              <span class="export-file-name">gameplay_2026-03-09_20260309_shorts.mp4</span>
+              <span class="export-file-size">128 MB</span>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">
+            ~/Videos/Vaya/
+          </div>
+          <button class="btn-open-folder" onclick="goTo('screen-drop')">폴더 열기</button>
+        </div>
+      </div>
+      <div class="panel-right" style="opacity:0.3;">
+        <div class="panel-section">
+          <div class="panel-section-title">내보내기</div>
+        </div>
+      </div>
+    </div>
+    <div class="timeline-area" style="opacity:0.3;">
+      <div class="timeline-toolbar"></div>
+      <div class="timeline-time-labels"></div>
+      <div class="timeline-track"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 8: Long Video Warning (overlay on drop) -->
+<div id="screen-warning" class="screen">
+  <div class="drop-screen">
+    <div class="drop-titlebar">
+      <div class="drop-titlebar-text">VAYA</div>
+    </div>
+    <div class="drop-zone" style="border-color: var(--border); opacity: 0.3;">
+      <div class="drop-icon">🎬</div>
+      <div class="drop-text">영상 파일을 여기에 드래그하세요</div>
+    </div>
+    <div class="long-video-warning">
+      <div class="warning-card">
+        <div class="warning-icon">⚠</div>
+        <div class="warning-title">긴 영상 감지</div>
+        <div class="warning-text">
+          이 영상은 <strong class="mono">3:12:45</strong> 입니다.<br>
+          분석에 상당한 시간이 소요될 수 있습니다.
+        </div>
+        <div class="warning-actions">
+          <button class="btn-warning-cancel" onclick="goTo('screen-drop')">취소</button>
+          <button class="btn-warning-proceed" onclick="goTo('screen-analyzing')">계속 진행</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 9: Format Error Toast on Drop -->
+<div id="screen-format-error" class="screen">
+  <div class="drop-screen">
+    <div class="drop-titlebar">
+      <div class="drop-titlebar-text">VAYA</div>
+    </div>
+    <div class="drop-zone" style="border-color: var(--error); background: #ff3b5c08;">
+      <div class="drop-icon">🎬</div>
+      <div class="drop-text">영상 파일을 여기에 드래그하세요</div>
+      <div class="drop-sub">또는 클릭하여 파일 선택</div>
+      <button class="drop-btn">파일 선택</button>
+      <div class="drop-formats">MP4 · MKV · MOV · WEBM</div>
+    </div>
+  </div>
+</div>
+
+<!-- Navigation -->
+<nav class="demo-nav">
+  <div class="demo-nav-label">DEMO</div>
+  <div class="demo-nav-scroll">
+    <button class="demo-nav-btn active" onclick="goTo('screen-loading')">① 로딩</button>
+    <button class="demo-nav-btn" onclick="goTo('screen-error')">② 에러</button>
+    <button class="demo-nav-btn" onclick="goTo('screen-drop')">③ 드롭</button>
+    <button class="demo-nav-btn" onclick="goTo('screen-warning')">④ 긴 영상 경고</button>
+    <button class="demo-nav-btn" onclick="goTo('screen-format-error'); showToast('warning', '⚠', '지원하지 않는 형식: broken_video.avi (코덱: MPEG-1)')">⑤ 포맷 에러</button>
+    <button class="demo-nav-btn" onclick="goTo('screen-analyzing')">⑥ 분석 중</button>
+    <button class="demo-nav-btn" onclick="goTo('screen-main')">⑦ 메인 (편집)</button>
+    <button class="demo-nav-btn" onclick="goTo('screen-exporting')">⑧ 내보내기</button>
+    <button class="demo-nav-btn" onclick="goTo('screen-complete')">⑨ 완료</button>
+  </div>
+</nav>
+
+<script>
+function goTo(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+
+  document.querySelectorAll('.demo-nav-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.onclick && btn.onclick.toString().includes(screenId)) {
+      btn.classList.add('active');
+    }
+  });
+}
+
+let toastTimeout;
+function showToast(type, icon, text) {
+  const toast = document.getElementById('toast');
+  toast.className = 'toast ' + type + ' show';
+  toast.querySelector('.toast-icon').textContent = icon;
+  toast.querySelector('.toast-text').textContent = text;
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => {
+    toast.classList.remove('show');
+  }, 3500);
+}
+
+// Animate analysis progress
+let analyzeVal = 0;
+setInterval(() => {
+  const screen = document.getElementById('screen-analyzing');
+  if (!screen.classList.contains('active')) { analyzeVal = 0; return; }
+  analyzeVal = (analyzeVal + 0.3) % 100;
+  const bar = document.getElementById('analyze-progress');
+  const pct = document.getElementById('analyze-percent');
+  if (bar && pct) {
+    bar.style.width = Math.round(analyzeVal) + '%';
+    pct.textContent = Math.round(analyzeVal) + '%';
+  }
+}, 100);
+
+// Animate export progress
+let exportVal = 0;
+setInterval(() => {
+  const screen = document.getElementById('screen-exporting');
+  if (!screen.classList.contains('active')) { exportVal = 0; return; }
+  exportVal = (exportVal + 0.2) % 100;
+  const bar = document.getElementById('export-progress');
+  if (bar) bar.style.width = Math.round(exportVal) + '%';
+}, 100);
+</script>
+</body>
+</html>
