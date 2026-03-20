@@ -234,12 +234,21 @@ function displayVideoInfo(info: {
 let thumbnailImages: HTMLImageElement[] = [];
 let videoDuration = 0;
 
+let timelineZoom = 1; // 1 = fit to view
+const MIN_PX_PER_SEC = 8; // 확대 시 최소 픽셀/초
+
 function resizeTimeline() {
   const container = timelineCanvas.parentElement!;
   const dpr = window.devicePixelRatio || 1;
-  timelineCanvas.width = container.clientWidth * dpr;
+  const containerW = container.clientWidth;
+  const fitW = containerW;
+
+  // 줌 적용: 최소 컨테이너 너비, 줌 시 더 넓어짐
+  const totalW = Math.max(fitW, fitW * timelineZoom);
+
+  timelineCanvas.width = totalW * dpr;
   timelineCanvas.height = container.clientHeight * dpr;
-  timelineCanvas.style.width = `${container.clientWidth}px`;
+  timelineCanvas.style.width = `${totalW}px`;
   timelineCanvas.style.height = `${container.clientHeight}px`;
   drawTimeline();
 }
@@ -281,80 +290,152 @@ function drawTimeline() {
   ctx.fillStyle = "#16213e";
   ctx.fillRect(0, 0, w, h);
 
+  const timeBarH = 28 * dpr;
+  const contentH = h - timeBarH;
+
   if (thumbnailImages.length === 0 || videoDuration <= 0) {
-    // Empty state
     ctx.fillStyle = "#6a6a80";
-    ctx.font = `${12 * dpr}px -apple-system, sans-serif`;
+    ctx.font = `${13 * dpr}px -apple-system, sans-serif`;
     ctx.textAlign = "center";
-    ctx.fillText("타임라인", w / 2, h / 2 + 4 * dpr);
+    ctx.fillText("영상을 업로드하면 타임라인이 표시됩니다", w / 2, h / 2 + 4 * dpr);
     return;
   }
 
-  // Draw thumbnails
-  const thumbHeight = h - 24 * dpr; // leave space for time markers
-  const thumbWidth = (thumbHeight / 180) * 320; // maintain 320:180 aspect
-  const totalThumbs = thumbnailImages.length;
-  const interval = 5; // seconds per thumbnail
   const pxPerSecond = w / videoDuration;
 
+  // Draw thumbnails
+  const totalThumbs = thumbnailImages.length;
+  const interval = 5;
   for (let i = 0; i < totalThumbs; i++) {
     const img = thumbnailImages[i];
     if (!img.complete || img.naturalWidth === 0) continue;
 
     const x = i * interval * pxPerSecond;
-    const drawW = Math.min(thumbWidth, interval * pxPerSecond);
-    ctx.drawImage(img, x, 0, drawW, thumbHeight);
+    const drawW = interval * pxPerSecond + 1;
+    ctx.drawImage(img, x, 0, drawW, contentH);
   }
 
-  // Highlight overlays
-  if (highlights.length > 0 && videoDuration > 0) {
+  // Non-highlight areas: darken (반전 — 선택 안 된 부분을 어둡게)
+  if (highlights.length > 0) {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillRect(0, 0, w, contentH);
+
+    // Highlight segments: bright (선택된 구간만 밝게)
     for (let idx = 0; idx < highlights.length; idx++) {
       const seg = highlights[idx];
       const hx = seg.start * pxPerSecond;
-      const hw = (seg.end - seg.start) * pxPerSecond;
+      const hw = Math.max((seg.end - seg.start) * pxPerSecond, 3 * dpr);
 
-      // Manual = blue, auto = orange
-      ctx.fillStyle = seg.manual
-        ? "rgba(52, 152, 219, 0.4)"
-        : "rgba(243, 156, 18, 0.4)";
-      ctx.fillRect(hx, 0, hw, thumbHeight);
+      // 썸네일 다시 그리기 (밝게)
+      for (let i = 0; i < totalThumbs; i++) {
+        const img = thumbnailImages[i];
+        if (!img.complete || img.naturalWidth === 0) continue;
+        const tx = i * interval * pxPerSecond;
+        const tw = interval * pxPerSecond + 1;
+        if (tx + tw > hx && tx < hx + hw) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(hx, 0, hw, contentH);
+          ctx.clip();
+          ctx.drawImage(img, tx, 0, tw, contentH);
+          ctx.restore();
+        }
+      }
 
-      // Selected segment border
+      // 상단 색상 바
+      const barH = 4 * dpr;
+      ctx.fillStyle = seg.manual ? "#3498db" : "#e94560";
+      ctx.fillRect(hx, 0, hw, barH);
+
+      // 좌우 경계선
+      ctx.strokeStyle = seg.manual ? "#3498db" : "#e94560";
+      ctx.lineWidth = 1.5 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(hx, 0); ctx.lineTo(hx, contentH);
+      ctx.moveTo(hx + hw, 0); ctx.lineTo(hx + hw, contentH);
+      ctx.stroke();
+
+      // 세그먼트 번호 라벨
+      if (hw > 20 * dpr) {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+        const labelW = Math.min(36 * dpr, hw);
+        ctx.fillRect(hx, barH, labelW, 16 * dpr);
+        ctx.fillStyle = "#fff";
+        ctx.font = `bold ${10 * dpr}px -apple-system, sans-serif`;
+        ctx.textAlign = "left";
+        ctx.fillText(`#${idx + 1}`, hx + 4 * dpr, barH + 12 * dpr);
+      }
+
+      // 선택된 세그먼트
       if (idx === selectedSegmentIdx) {
         ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 2 * dpr;
-        ctx.strokeRect(hx, 0, hw, thumbHeight);
+        ctx.lineWidth = 2.5 * dpr;
+        ctx.strokeRect(hx, 0, hw, contentH);
 
-        // Resize handles (6px wide bars at edges)
-        const handleW = 6 * dpr;
-        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-        ctx.fillRect(hx - handleW / 2, 0, handleW, thumbHeight);
-        ctx.fillRect(hx + hw - handleW / 2, 0, handleW, thumbHeight);
+        const handleW = 8 * dpr;
+        ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+        ctx.fillRect(hx - handleW / 2, contentH / 2 - 16 * dpr, handleW, 32 * dpr);
+        ctx.fillRect(hx + hw - handleW / 2, contentH / 2 - 16 * dpr, handleW, 32 * dpr);
       }
     }
   }
 
+  // Time bar background
+  ctx.fillStyle = "#0d1b2a";
+  ctx.fillRect(0, contentH, w, timeBarH);
+
   // Time markers
-  ctx.fillStyle = "#a0a0b0";
+  ctx.fillStyle = "#8899aa";
   ctx.font = `${10 * dpr}px -apple-system, sans-serif`;
   ctx.textAlign = "center";
 
-  const markerInterval = videoDuration > 300 ? 30 : videoDuration > 60 ? 10 : 5;
+  // 줌 레벨에 따라 마커 간격 조정
+  const secPerPx = videoDuration / (w / dpr);
+  const markerInterval = secPerPx > 5 ? 60 : secPerPx > 2 ? 30 : secPerPx > 0.5 ? 10 : 5;
+
   for (let t = 0; t <= videoDuration; t += markerInterval) {
     const x = t * pxPerSecond;
-    // Tick
-    ctx.strokeStyle = "#3a3a5a";
+    // 눈금
+    ctx.strokeStyle = "#334455";
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(x, thumbHeight);
-    ctx.lineTo(x, thumbHeight + 4 * dpr);
+    ctx.moveTo(x, contentH);
+    ctx.lineTo(x, contentH + 6 * dpr);
     ctx.stroke();
-    // Label
-    ctx.fillText(formatDuration(t), x, h - 4 * dpr);
+    // 라벨
+    ctx.fillText(formatDuration(t), x, contentH + 18 * dpr);
+  }
+
+  // 작은 눈금 (중간)
+  const subInterval = markerInterval / 2;
+  if (subInterval >= 5) {
+    for (let t = subInterval; t <= videoDuration; t += markerInterval) {
+      const x = t * pxPerSecond;
+      ctx.strokeStyle = "#223344";
+      ctx.beginPath();
+      ctx.moveTo(x, contentH);
+      ctx.lineTo(x, contentH + 4 * dpr);
+      ctx.stroke();
+    }
   }
 }
 
 window.addEventListener("resize", () => {
   if (currentScreen === "main") resizeTimeline();
+});
+
+// 타임라인 줌 버튼
+document.getElementById("timeline-zoom-in")!.addEventListener("click", () => {
+  timelineZoom = Math.min(timelineZoom * 1.5, 20);
+  resizeTimeline();
+});
+document.getElementById("timeline-zoom-out")!.addEventListener("click", () => {
+  timelineZoom = Math.max(timelineZoom / 1.5, 1);
+  resizeTimeline();
+});
+document.getElementById("timeline-zoom-fit")!.addEventListener("click", () => {
+  timelineZoom = 1;
+  resizeTimeline();
 });
 
 // ===== Undo/Redo =====
