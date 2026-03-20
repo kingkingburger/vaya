@@ -47,6 +47,11 @@ async def _run_export(video_id: str, req: ExportRequest):
     info = store[video_id]["info"]
     highlights = store[video_id].get("highlights", [])
     silence = store[video_id].get("silence", [])
+
+    if not highlights:
+        await progress_manager.broadcast(video_id, "error", 0, "내보내기 실패: 하이라이트 구간이 없습니다. 먼저 분석을 실행하세요.")
+        _exporting.discard(video_id)
+        return
     config = load_config()
 
     # Determine subtitles path

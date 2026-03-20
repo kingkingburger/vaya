@@ -88,7 +88,10 @@ async def _run_analysis(video_id: str):
         store[video_id]["silence"] = silence_segments
         store[video_id]["subtitles"] = subtitles
 
-        await progress_manager.broadcast(video_id, "complete", 100, "분석 완료")
+        if len(highlights) == 0:
+            await progress_manager.broadcast(video_id, "complete", 100, "분석 완료 (하이라이트 0개 — 설정에서 '상위 %'를 높여보세요)")
+        else:
+            await progress_manager.broadcast(video_id, "complete", 100, f"분석 완료 — 하이라이트 {len(highlights)}개 발견")
 
     except Exception as e:
         print(f"[analyze] Error analyzing {video_id}: {e}")
