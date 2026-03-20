@@ -211,6 +211,7 @@ async def export_video(
 
 async def _run_ffmpeg(cmd: list[str], progress_callback, stage: str, start_pct: float, end_pct: float):
     """Run FFmpeg process and parse stderr for progress."""
+    print(f"[ffmpeg] Running: {' '.join(cmd[:8])}...")
     proc = await asyncio.create_subprocess_exec(
         *cmd,
         stderr=asyncio.subprocess.PIPE,
@@ -220,14 +221,15 @@ async def _run_ffmpeg(cmd: list[str], progress_callback, stage: str, start_pct: 
     duration_re = re.compile(r"Duration:\s*(\d+):(\d+):(\d+)\.(\d+)")
     time_re = re.compile(r"time=(\d+):(\d+):(\d+)\.(\d+)")
     total_duration = 0.0
+    stderr_lines: list[str] = []
 
     while True:
         line = await proc.stderr.readline()
         if not line:
             break
-        text = line.decode("utf-8", errors="ignore")
+        text = line.decode("utf-8", errors="replace")
+        stderr_lines.append(text.rstrip())
 
-        # Parse total duration
         dm = duration_re.search(text)
         if dm:
             total_duration = (
@@ -235,7 +237,6 @@ async def _run_ffmpeg(cmd: list[str], progress_callback, stage: str, start_pct: 
                 int(dm.group(3)) + int(dm.group(4)) / 100
             )
 
-        # Parse current time
         tm = time_re.search(text)
         if tm and total_duration > 0 and progress_callback:
             current = (
@@ -247,7 +248,9 @@ async def _run_ffmpeg(cmd: list[str], progress_callback, stage: str, start_pct: 
 
     await proc.wait()
     if proc.returncode != 0:
-        # 남은 stderr 읽기
-        remaining = await proc.stderr.read() if proc.stderr else b""
-        err_text = remaining.decode("utf-8", errors="replace")[-500:]
-        raise RuntimeError(f"FFmpeg export failed (exit code {proc.returncode}): {err_text}")
+        err_tail = "\n".join(stderr_lines[-20:])
+        print(f"[ffmpeg] FAILED (exit {proc.returncode}):\n{err_tail}")
+        # 사용자에게 보여줄 핵심 에러만 추출
+        error_lines = [l for l in stderr_lines if "Error" in l or "error" in l or "Invalid" in l]
+        user_msg = error_lines[-1] if error_lines else err_tail[-200:]
+        raise RuntimeError(f"FFmpeg 실패: {user_msg}")

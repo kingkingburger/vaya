@@ -172,16 +172,27 @@ function showScreen(screen: Screen) {
 }
 
 // ===== Toast system =====
-function showToast(message: string, type: "error" | "warning" | "success" = "error", duration = 4000) {
+function showToast(message: string, type: "error" | "warning" | "success" | "info" = "error", duration = 5000) {
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
   toast.textContent = message;
+  toast.title = "클릭하면 닫힘";
   toastContainer.appendChild(toast);
 
-  setTimeout(() => {
+  // 클릭으로 즉시 닫기
+  toast.addEventListener("click", () => {
     toast.classList.add("toast-out");
     toast.addEventListener("animationend", () => toast.remove());
-  }, duration);
+  });
+
+  // 에러는 더 오래 표시
+  const timeout = type === "error" ? Math.max(duration, 8000) : duration;
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.classList.add("toast-out");
+      toast.addEventListener("animationend", () => toast.remove());
+    }
+  }, timeout);
 }
 
 // ===== Modal system =====
