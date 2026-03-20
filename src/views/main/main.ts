@@ -61,6 +61,33 @@ const progressPercent = document.getElementById("progress-percent")!;
 const progressBar = document.getElementById("progress-bar")!;
 const progressFun = document.getElementById("progress-fun")!;
 
+// ===== Loading overlay =====
+const loadingOverlay = document.getElementById("loading-overlay")!;
+const loadingMessage = document.getElementById("loading-message")!;
+const loadingFunMsg = document.getElementById("loading-fun-msg")!;
+let loadingFunInterval: ReturnType<typeof setInterval> | null = null;
+
+function showLoading(msg: string) {
+  loadingMessage.textContent = msg;
+  loadingOverlay.classList.remove("hidden");
+  // 유쾌한 메시지 순환
+  const show = () => {
+    const idx = Math.floor(Math.random() * FUN_MESSAGES.length);
+    loadingFunMsg.textContent = FUN_MESSAGES[idx];
+  };
+  show();
+  loadingFunInterval = setInterval(show, 3000);
+}
+
+function hideLoading() {
+  loadingOverlay.classList.add("hidden");
+  if (loadingFunInterval) {
+    clearInterval(loadingFunInterval);
+    loadingFunInterval = null;
+  }
+  loadingFunMsg.textContent = "";
+}
+
 // Fun loading messages
 const FUN_MESSAGES = [
   "픽셀 하나하나 정성스럽게 살펴보는 중...",
@@ -705,13 +732,17 @@ retryBtn.addEventListener("click", () => {
 // ===== Drop zone events =====
 async function openAndSelectFile() {
   try {
+    showLoading("파일 선택 대화상자를 여는 중...");
     const res = await fetch(`${BACKEND_URL}/api/file-dialog`, { method: "POST" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (data.file_path) {
+      showLoading("영상 파일 분석 중...");
       await handleFileSelected(data.file_path);
     }
+    hideLoading();
   } catch (err: any) {
+    hideLoading();
     showToast(`파일 선택 오류: ${err?.message || err}`, "error");
   }
 }
@@ -725,7 +756,7 @@ async function handleFileDrop(file: File) {
   }
 
   try {
-    showToast(`업로드 중: ${file.name}...`, "info");
+    showLoading(`업로드 중: ${file.name}`);
     const formData = new FormData();
     formData.append("file", file);
 
@@ -740,8 +771,10 @@ async function handleFileDrop(file: File) {
     }
 
     const result = await res.json();
+    hideLoading();
     await processUploadResult(result, file.name);
   } catch (err: any) {
+    hideLoading();
     showToast(`업로드 실패: ${err?.message || err}`, "error");
   }
 }
@@ -1251,11 +1284,13 @@ async function handleFileSelected(filePath: string) {
   const ext = filePath.split(".").pop()?.toLowerCase() || "";
   const supported = ["mp4", "mkv", "mov", "webm", "avi"];
   if (!supported.includes(ext)) {
+    hideLoading();
     showToast(`지원하지 않는 형식: ${extractFilename(filePath)} (.${ext})`, "error");
     return;
   }
 
   try {
+    showLoading(`영상 처리 중: ${extractFilename(filePath)}`);
     const res = await fetch(`${BACKEND_URL}/api/upload`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1268,8 +1303,10 @@ async function handleFileSelected(filePath: string) {
     }
 
     const result = await res.json();
+    hideLoading();
     await processUploadResult(result, filePath);
   } catch (err) {
+    hideLoading();
     const errMsg = String(err);
     if (errMsg.includes("404") || errMsg.includes("not found")) {
       showToast(`파일을 찾을 수 없습니다: ${extractFilename(filePath)}`, "error");
