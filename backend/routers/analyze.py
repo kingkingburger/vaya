@@ -75,10 +75,45 @@ async def _run_analysis(video_id: str):
         await progress_manager.broadcast(video_id, "silence", 95, "무음 구간 감지 완료")
 
         # Stage 5: Subtitle generation (95-100%)
-        await progress_manager.broadcast(video_id, "subtitle", 95, "자막 생성 중...")
-        subtitles = await asyncio.to_thread(
-            _generate_subtitles, file_path, video_id, config.subtitle
-        )
+        await progress_manager.broadcast(video_id, "subtitle", 95, "자막 생성 중... (Whisper AI 처리, 잠시 기다려주세요)")
+
+        # 자막 생성은 오래 걸리므로 하트비트로 살아있음을 표시
+        subtitle_done = False
+        subtitle_result: list = []
+        subtitle_error: Exception | None = None
+
+        def _run_subtitle():
+            nonlocal subtitle_result, subtitle_error
+            try:
+                subtitle_result = _generate_subtitles(file_path, video_id, config.subtitle)
+            except Exception as e:
+                subtitle_error = e
+
+        import threading
+        t = threading.Thread(target=_run_subtitle)
+        t.start()
+
+        heartbeat_msgs = [
+            "자막 요정이 열심히 받아쓰기 중...",
+            "AI가 음성을 해독하고 있습니다...",
+            "거의 다 됐어요, 조금만 더...",
+            "한 글자 한 글자 정성스럽게...",
+            "마이크에 귀를 기울이는 중...",
+            "음성 인식 엔진 전력 질주 중...",
+        ]
+        beat_idx = 0
+        while t.is_alive():
+            msg = heartbeat_msgs[beat_idx % len(heartbeat_msgs)]
+            pct = min(95 + beat_idx * 0.5, 99)
+            await progress_manager.broadcast(video_id, "subtitle", pct, msg)
+            beat_idx += 1
+            await asyncio.sleep(3)
+
+        t.join()
+        if subtitle_error:
+            raise subtitle_error
+        subtitles = subtitle_result
+
         await progress_manager.broadcast(video_id, "subtitle", 99, "자막 생성 완료")
 
         # Store results
