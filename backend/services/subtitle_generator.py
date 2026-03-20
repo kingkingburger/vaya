@@ -38,6 +38,12 @@ def generate_subtitles(
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # GPU 없으면 base 모델로 대체 (medium은 CPU에서 너무 느림)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if device == "cpu" and model_name in ("medium", "large", "large-v2", "large-v3"):
+        print(f"[subtitle] GPU 미사용: 모델 {model_name} → base로 대체")
+        model_name = "base"
+
     # Extract audio to temp file
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         tmp_path = tmp.name
@@ -47,7 +53,6 @@ def generate_subtitles(
 
         # Load model (uses GPU if available)
         model = _get_model(model_name)
-        device = "cuda" if torch.cuda.is_available() else "cpu"
 
         # Transcribe
         result = model.transcribe(

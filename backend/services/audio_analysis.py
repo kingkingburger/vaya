@@ -18,7 +18,7 @@ def extract_audio(video_path: str, output_path: str, sr: int = 22050) -> str:
     ]
     result = subprocess.run(cmd, capture_output=True, timeout=120)
     if result.returncode != 0:
-        raise RuntimeError(f"Audio extraction failed: {result.stderr.decode()}")
+        raise RuntimeError(f"Audio extraction failed: {result.stderr.decode('utf-8', errors='replace')}")
     return output_path
 
 

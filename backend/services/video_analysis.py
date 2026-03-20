@@ -24,7 +24,7 @@ def analyze_frame_difference(video_path: str, fps: float = 2.0, size: str = "160
         ]
         result = subprocess.run(cmd, capture_output=True, timeout=120)
         if result.returncode != 0:
-            raise RuntimeError(f"Frame extraction failed: {result.stderr.decode()}")
+            raise RuntimeError(f"Frame extraction failed: {result.stderr.decode('utf-8', errors='replace')}")
 
         # Load frames in order
         frame_files = sorted(Path(tmp_dir).glob("frame_*.jpg"))

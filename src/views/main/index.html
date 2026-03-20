@@ -90,6 +90,7 @@
         <div class="progress-bar-track">
           <div id="progress-bar" class="progress-bar-fill" style="width: 0%"></div>
         </div>
+        <div id="progress-fun" class="progress-fun"></div>
       </div>
 
       <main class="main-layout">
@@ -121,6 +122,23 @@
             </div>
           </section>
         </aside>
+
+        <!-- Center: thumbnail preview -->
+        <div class="panel panel-center">
+          <section class="panel-section">
+            <h3 class="panel-heading">미리보기</h3>
+            <div id="thumbnail-grid" class="thumbnail-grid">
+              <p class="placeholder-text">영상 분석 후 썸네일이 표시됩니다</p>
+            </div>
+          </section>
+          <section class="panel-section">
+            <h3 class="panel-heading">GPU 상태</h3>
+            <div id="main-gpu-detail" class="info-list">
+              <div class="info-row"><span class="info-label">GPU</span><span id="gpu-status-text" class="info-value">확인 중...</span></div>
+              <div class="info-row"><span class="info-label">NVENC</span><span id="nvenc-status-text" class="info-value">확인 중...</span></div>
+            </div>
+          </section>
+        </div>
 
         <!-- Right panel: settings + export -->
         <aside class="panel panel-right">

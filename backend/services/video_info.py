@@ -29,11 +29,11 @@ def extract_metadata(file_path: str) -> dict:
         str(path),
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(cmd, capture_output=True, timeout=30)
     if result.returncode != 0:
-        raise RuntimeError(f"FFprobe failed: {result.stderr}")
+        raise RuntimeError(f"FFprobe failed: {result.stderr.decode('utf-8', errors='replace')}")
 
-    probe = json.loads(result.stdout)
+    probe = json.loads(result.stdout.decode("utf-8", errors="replace"))
 
     # Find video stream
     video_stream = None

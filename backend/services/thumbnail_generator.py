@@ -22,11 +22,11 @@ def generate_thumbnails(
         "-of", "default=noprint_wrappers=1:nokey=1",
         str(video_path),
     ]
-    result = subprocess.run(duration_cmd, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(duration_cmd, capture_output=True, timeout=30)
     if result.returncode != 0:
-        raise RuntimeError(f"FFprobe failed: {result.stderr}")
+        raise RuntimeError(f"FFprobe failed: {result.stderr.decode('utf-8', errors='replace')}")
 
-    duration = float(result.stdout.strip())
+    duration = float(result.stdout.decode("utf-8", errors="replace").strip())
     filenames: list[str] = []
 
     # Extract thumbnails at each interval

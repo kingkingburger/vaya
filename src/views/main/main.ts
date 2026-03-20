@@ -59,6 +59,62 @@ const progressBanner = document.getElementById("progress-banner")!;
 const progressStage = document.getElementById("progress-stage")!;
 const progressPercent = document.getElementById("progress-percent")!;
 const progressBar = document.getElementById("progress-bar")!;
+const progressFun = document.getElementById("progress-fun")!;
+
+// Fun loading messages
+const FUN_MESSAGES = [
+  "픽셀 하나하나 정성스럽게 살펴보는 중...",
+  "영상 속 먼지 터는 중...",
+  "하이라이트 킬을 수색하는 중...",
+  "AI가 커피 한 잔 내리는 중...",
+  "프레임을 세고 또 세는 중...",
+  "소리를 맛보고 있는 중...",
+  "몰래 숨어있는 명장면 추적 중...",
+  "음파를 현미경으로 관찰하는 중...",
+  "영상을 잘게 다지는 중...",
+  "GPU가 열심히 땀 흘리는 중...",
+  "킬캠 감별사가 출동했습니다...",
+  "무음 구간을 쓸어담는 중...",
+  "편집점을 점치는 중...",
+  "타임라인에 양념 치는 중...",
+  "프레임마다 인사하고 지나가는 중...",
+  "자막 요정이 받아쓰기 중...",
+  "영상이 맛있게 익고 있습니다...",
+  "컷 편집의 신이 강림하셨습니다...",
+  "데이터를 맛있게 볶는 중...",
+  "1과 0 사이에서 보물 찾는 중...",
+  "영상 속 고양이를 세는 중...",
+  "인코딩 요리사가 불 조절하는 중...",
+  "알고리즘이 신나게 춤추는 중...",
+  "렌더링 도중 잠깐 스트레칭...",
+  "FFmpeg가 심호흡하고 있습니다...",
+];
+let funMessageInterval: ReturnType<typeof setInterval> | null = null;
+
+function startFunMessages() {
+  const used = new Set<number>();
+  const show = () => {
+    let idx: number;
+    do { idx = Math.floor(Math.random() * FUN_MESSAGES.length); } while (used.has(idx) && used.size < FUN_MESSAGES.length);
+    used.add(idx);
+    if (used.size >= FUN_MESSAGES.length) used.clear();
+    progressFun.classList.remove("visible");
+    setTimeout(() => {
+      progressFun.textContent = FUN_MESSAGES[idx];
+      progressFun.classList.add("visible");
+    }, 400);
+  };
+  show();
+  funMessageInterval = setInterval(show, 4000);
+}
+
+function stopFunMessages() {
+  if (funMessageInterval) {
+    clearInterval(funMessageInterval);
+    funMessageInterval = null;
+  }
+  progressFun.classList.remove("visible");
+}
 
 // Timeline
 const timelineCanvas = document.getElementById("timeline-canvas") as HTMLCanvasElement;
@@ -129,6 +185,12 @@ function updateGpuText() {
     : "CPU only";
   dropGpuText.textContent = text;
   mainGpuText.textContent = text;
+
+  // 중앙 패널 GPU 상태
+  const gpuStatusEl = document.getElementById("gpu-status-text");
+  const nvencStatusEl = document.getElementById("nvenc-status-text");
+  if (gpuStatusEl) gpuStatusEl.textContent = gpuAvailable ? "사용 가능" : "미사용 (CPU 모드)";
+  if (nvencStatusEl) nvencStatusEl.textContent = nvencAvailable ? "사용 가능" : "미사용";
 }
 
 // ===== Format helpers =====
@@ -186,12 +248,22 @@ function loadThumbnails(videoId: string, urls: string[]) {
   thumbnailImages = [];
   const backendUrl = "http://127.0.0.1:8765";
 
+  // 중앙 패널 썸네일 그리드에도 표시
+  const grid = document.getElementById("thumbnail-grid")!;
+  grid.innerHTML = "";
+
   for (const url of urls) {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.src = `${backendUrl}${url}`;
     img.onload = () => drawTimeline();
     thumbnailImages.push(img);
+
+    // 그리드에 추가
+    const gridImg = new Image();
+    gridImg.crossOrigin = "anonymous";
+    gridImg.src = `${backendUrl}${url}`;
+    grid.appendChild(gridImg);
   }
 }
 
@@ -550,12 +622,52 @@ retryBtn.addEventListener("click", () => {
 });
 
 // ===== Drop zone events =====
+async function openAndSelectFile() {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/file-dialog`, { method: "POST" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.file_path) {
+      await handleFileSelected(data.file_path);
+    }
+  } catch (err: any) {
+    showToast(`파일 선택 오류: ${err?.message || err}`, "error");
+  }
+}
+
+async function handleFileDrop(file: File) {
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+  const supported = ["mp4", "mkv", "mov", "webm", "avi"];
+  if (!supported.includes(ext)) {
+    showToast(`지원하지 않는 형식: ${file.name} (.${ext})`, "error");
+    return;
+  }
+
+  try {
+    showToast(`업로드 중: ${file.name}...`, "info");
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch(`${BACKEND_URL}/api/upload-file`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const detail = await res.text();
+      throw new Error(detail);
+    }
+
+    const result = await res.json();
+    await processUploadResult(result, file.name);
+  } catch (err: any) {
+    showToast(`업로드 실패: ${err?.message || err}`, "error");
+  }
+}
+
 browseBtn.addEventListener("click", async (e) => {
   e.stopPropagation();
-  const filePath = await electroview.rpc.request.openFileDialog({});
-  if (filePath) {
-    await handleFileSelected(filePath);
-  }
+  await openAndSelectFile();
 });
 
 dropZone.addEventListener("click", (e) => {
@@ -582,7 +694,7 @@ dropZone.addEventListener("drop", async (e) => {
     if (path) {
       await handleFileSelected(path);
     } else {
-      showToast("드래그&드롭 경로를 가져올 수 없습니다. 파일 선택 버튼을 사용해주세요.", "warning");
+      await handleFileDrop(file);
     }
   }
 });
@@ -652,6 +764,13 @@ function updateProgress(stage: string, percent: number, message: string) {
   progressStage.textContent = message;
   progressPercent.textContent = `${Math.round(percent)}%`;
   progressBar.style.width = `${percent}%`;
+
+  // 유쾌한 메시지 시작/중지
+  if (stage === "complete" || stage === "export_complete" || stage === "error") {
+    stopFunMessages();
+  } else if (!funMessageInterval) {
+    startFunMessages();
+  }
 }
 
 // ===== Analysis auto-start =====
@@ -1008,9 +1127,46 @@ openFolderBtn.addEventListener("click", async () => {
   showScreen("drop");
 });
 
+// ===== Upload result processing (shared by file path & drag-drop) =====
+async function processUploadResult(result: any, displayName: string) {
+  const info = result.info;
+
+  if (info.duration > 3600) {
+    const hours = (info.duration / 3600).toFixed(1);
+    const proceed = await showModal(
+      "긴 영상 경고",
+      `이 영상은 약 ${hours}시간입니다. 분석에 상당한 시간이 소요될 수 있습니다.`
+    );
+    if (!proceed) return;
+  }
+
+  currentVideoId = result.id;
+  videoDuration = info.duration;
+  displayVideoInfo(info, displayName);
+  showScreen("main");
+
+  if (result.thumbnail_count > 0) {
+    try {
+      const thumbRes = await fetch(`${BACKEND_URL}/api/video/${result.id}/thumbnails`);
+      if (thumbRes.ok) {
+        const thumbData = await thumbRes.json();
+        loadThumbnails(result.id, thumbData.thumbnails);
+      }
+    } catch (e) {
+      console.warn("Failed to load thumbnails:", e);
+    }
+  }
+
+  if (!nvencAvailable) {
+    showToast("NVENC를 사용할 수 없어 libx264로 인코딩됩니다. 내보내기가 느릴 수 있습니다.", "warning", 5000);
+  }
+
+  loadSettings();
+  startAnalysis(result.id);
+}
+
 // ===== File selection handler =====
 async function handleFileSelected(filePath: string) {
-  // Check file extension client-side first
   const ext = filePath.split(".").pop()?.toLowerCase() || "";
   const supported = ["mp4", "mkv", "mov", "webm", "avi"];
   if (!supported.includes(ext)) {
@@ -1019,46 +1175,19 @@ async function handleFileSelected(filePath: string) {
   }
 
   try {
-    const result = await electroview.rpc.request.uploadVideo({ filePath });
-    const info = result.info;
+    const res = await fetch(`${BACKEND_URL}/api/upload`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ file_path: filePath }),
+    });
 
-    // Check if video is longer than 1 hour (3600 seconds)
-    if (info.duration > 3600) {
-      const hours = (info.duration / 3600).toFixed(1);
-      const proceed = await showModal(
-        "긴 영상 경고",
-        `이 영상은 약 ${hours}시간입니다. 분석에 상당한 시간이 소요될 수 있습니다.`
-      );
-      if (!proceed) return;
+    if (!res.ok) {
+      const detail = await res.text();
+      throw new Error(detail);
     }
 
-    // Transition to main screen
-    currentVideoId = result.id;
-    videoDuration = info.duration;
-    displayVideoInfo(info, filePath);
-    showScreen("main");
-
-    // Load thumbnails
-    if (result.thumbnail_count > 0) {
-      try {
-        const thumbRes = await fetch(`${BACKEND_URL}/api/video/${result.id}/thumbnails`);
-        if (thumbRes.ok) {
-          const thumbData = await thumbRes.json();
-          loadThumbnails(result.id, thumbData.thumbnails);
-        }
-      } catch (e) {
-        console.warn("Failed to load thumbnails:", e);
-      }
-    }
-
-    // Warn if NVENC not available
-    if (!nvencAvailable) {
-      showToast("NVENC를 사용할 수 없어 libx264로 인코딩됩니다. 내보내기가 느릴 수 있습니다.", "warning", 5000);
-    }
-
-    // Load settings and auto-start analysis
-    loadSettings();
-    startAnalysis(result.id);
+    const result = await res.json();
+    await processUploadResult(result, filePath);
   } catch (err) {
     const errMsg = String(err);
     if (errMsg.includes("404") || errMsg.includes("not found")) {

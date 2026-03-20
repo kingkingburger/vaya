@@ -21,12 +21,16 @@ const rpc = BrowserView.defineRPC<VayaRPC>({
 
       openFileDialog: async ({ filter }) => {
         const { openFileDialog } = await import("electrobun/bun");
+        const homedir = process.env.USERPROFILE || process.env.HOME || "C:\\";
         const result = await openFileDialog({
-          allowedFileTypes: filter
-            ? [filter]
-            : ["mp4", "mkv", "avi", "mov", "webm"],
+          startingFolder: homedir,
+          allowedFileTypes: filter ?? "*",
+          canChooseDirectory: false,
+          allowsMultipleSelection: false,
         });
-        return result ?? null;
+        // result가 빈 문자열이면 취소된 것
+        const paths = result.filter((p: string) => p && p.length > 0);
+        return paths[0] ?? null;
       },
 
       openFolder: async ({ path }) => {

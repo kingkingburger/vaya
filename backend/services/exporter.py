@@ -17,9 +17,10 @@ def _detect_encoder() -> str:
     try:
         result = subprocess.run(
             ["ffmpeg", "-hide_banner", "-encoders"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True, timeout=10,
         )
-        if "h264_nvenc" in result.stdout:
+        stdout = result.stdout.decode("utf-8", errors="replace")
+        if "h264_nvenc" in stdout:
             # Test if NVENC actually works
             test = subprocess.run(
                 ["ffmpeg", "-f", "lavfi", "-i", "nullsrc=s=64x64:d=0.1",
@@ -246,4 +247,7 @@ async def _run_ffmpeg(cmd: list[str], progress_callback, stage: str, start_pct: 
 
     await proc.wait()
     if proc.returncode != 0:
-        raise RuntimeError(f"FFmpeg export failed (exit code {proc.returncode})")
+        # 남은 stderr 읽기
+        remaining = await proc.stderr.read() if proc.stderr else b""
+        err_text = remaining.decode("utf-8", errors="replace")[-500:]
+        raise RuntimeError(f"FFmpeg export failed (exit code {proc.returncode}): {err_text}")
