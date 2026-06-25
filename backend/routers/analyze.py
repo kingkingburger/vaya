@@ -21,6 +21,18 @@ def _get_store():
     return get_video_store()
 
 
+def _is_manual_highlight(segment) -> bool:
+    if isinstance(segment, dict):
+        return bool(segment.get("manual"))
+    return bool(getattr(segment, "manual", False))
+
+
+def _to_highlight_segment(segment) -> HighlightSegment:
+    if isinstance(segment, HighlightSegment):
+        return segment
+    return HighlightSegment(**segment)
+
+
 @router.post("/api/video/{video_id}/analyze")
 async def start_analysis(video_id: str):
     store = _get_store()
@@ -44,6 +56,11 @@ async def _run_analysis(video_id: str):
     info = store[video_id]["info"]
     file_path = info.file_path
     config = load_config()
+    manual_highlights = [
+        _to_highlight_segment(segment)
+        for segment in store[video_id].get("highlights", [])
+        if _is_manual_highlight(segment)
+    ]
 
     try:
         # Stage 1: Audio analysis (0-40%)
@@ -117,9 +134,11 @@ async def _run_analysis(video_id: str):
         await progress_manager.broadcast(video_id, "subtitle", 99, "자막 생성 완료")
 
         # Store results
-        store[video_id]["highlights"] = [
-            HighlightSegment(**h) for h in highlights
-        ]
+        auto_highlights = [HighlightSegment(**h) for h in highlights]
+        store[video_id]["highlights"] = sorted(
+            [*manual_highlights, *auto_highlights],
+            key=lambda segment: segment.start,
+        )
         store[video_id]["silence"] = silence_segments
         store[video_id]["subtitles"] = subtitles
 

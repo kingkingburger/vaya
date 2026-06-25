@@ -32,6 +32,7 @@ class HighlightSegment(BaseModel):
     start: float
     end: float
     score: float = 0.0
+    manual: bool = False
 
 
 class SubtitleSegment(BaseModel):

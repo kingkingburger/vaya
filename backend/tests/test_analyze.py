@@ -81,7 +81,7 @@ def test_put_highlights(client):
     video_id = _seed_video(client)
 
     segments = [
-        {"start": 5.0, "end": 15.0, "score": 0.85},
+        {"start": 5.0, "end": 15.0, "score": 0.85, "manual": True},
         {"start": 20.0, "end": 28.0, "score": 0.72},
     ]
 
@@ -95,7 +95,35 @@ def test_put_highlights(client):
     data = resp2.json()
     assert len(data) == 2
     assert data[0]["start"] == 5.0
+    assert data[0]["manual"] is True
     assert data[1]["score"] == 0.72
+
+
+def test_analysis_preserves_manual_highlights(client):
+    video_id = _seed_video(client)
+
+    client.put(f"/api/video/{video_id}/highlights", json=[
+        {"start": 3.0, "end": 7.0, "score": 0.0, "manual": True},
+    ])
+
+    from routers import analyze
+
+    with patch("routers.analyze._analyze_audio", return_value=np.array([0.5])), \
+         patch("routers.analyze._analyze_video", return_value=np.array([0.5])), \
+         patch("routers.analyze._compute_highlights", return_value=[
+             {"start": 12.0, "end": 18.0, "score": 0.9},
+         ]), \
+         patch("routers.analyze._detect_silence", return_value=[]), \
+         patch("routers.analyze._generate_subtitles", return_value=[]):
+        asyncio.run(analyze._run_analysis(video_id))
+
+    resp = client.get(f"/api/video/{video_id}/highlights")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data == [
+        {"start": 3.0, "end": 7.0, "score": 0.0, "manual": True},
+        {"start": 12.0, "end": 18.0, "score": 0.9, "manual": False},
+    ]
 
 
 def test_put_highlights_not_found(client):

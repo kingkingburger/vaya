@@ -615,6 +615,7 @@ timelineCanvas.addEventListener("mousemove", (e) => {
     seg.start = round2(newStart);
     seg.end = round2(newStart + dur);
   }
+  seg.manual = true;
 
   drawTimeline();
   renderHighlightList();

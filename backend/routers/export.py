@@ -47,6 +47,7 @@ async def _run_export(video_id: str, req: ExportRequest):
     info = store[video_id]["info"]
     highlights = store[video_id].get("highlights", [])
     silence = store[video_id].get("silence", [])
+    subtitle_segments = store[video_id].get("subtitles", [])
 
     if not highlights:
         await progress_manager.broadcast(video_id, "error", 0, "내보내기 실패: 하이라이트 구간이 없습니다. 먼저 분석을 실행하세요.")
@@ -73,9 +74,11 @@ async def _run_export(video_id: str, req: ExportRequest):
             silence_segments=silence,
             subtitles_path=subtitles_path,
             config=config,
+            subtitle_segments=subtitle_segments,
             youtube=req.youtube,
             shorts=req.shorts,
             subtitles=req.subtitles,
+            crop_offset=req.crop_offset,
             progress_callback=on_progress,
         )
 
