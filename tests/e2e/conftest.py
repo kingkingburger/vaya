@@ -23,7 +23,7 @@ def _wait_for_server(url, timeout=15):
             r = httpx.get(url, timeout=2)
             if r.status_code < 500:
                 return True
-        except (httpx.ConnectError, httpx.ReadTimeout):
+        except (httpx.ConnectError, httpx.TimeoutException):
             pass
         time.sleep(0.5)
     return False
@@ -32,14 +32,11 @@ def _wait_for_server(url, timeout=15):
 @pytest.fixture(scope="session")
 def backend_server():
     """Start the FastAPI backend server for the test session."""
-    # Check if already running
-    try:
-        r = httpx.get(f"{BACKEND_URL}/api/health", timeout=2)
-        if r.status_code == 200:
-            yield BACKEND_URL
-            return
-    except (httpx.ConnectError, httpx.ReadTimeout):
-        pass
+    # First health checks can be slow because the endpoint imports torch to
+    # detect CUDA, so use polling instead of a single short request.
+    if _wait_for_server(f"{BACKEND_URL}/api/health", timeout=15):
+        yield BACKEND_URL
+        return
 
     # Start the backend
     backend_dir = os.path.join(os.path.dirname(__file__), "..", "..", "backend")

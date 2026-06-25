@@ -1,75 +1,50 @@
-"""
-Test frontend server that patches Electrobun's Electroview with a mock.
-Serves the built frontend files with the Electroview class replaced.
-"""
+"""Serve the Vite-built frontend for Playwright with a small Tauri IPC mock."""
 import http.server
 import os
-import re
 import sys
 import threading
 
-BUILD_DIR = os.path.join(
-    os.path.dirname(__file__), "..", "..", "build", "dev-win-x64",
-    "Vaya-dev", "Resources", "app", "views", "main"
-)
-MOCK_JS_PATH = os.path.join(os.path.dirname(__file__), "electrobun_mock.js")
+DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "dist"))
 
-
-def get_patched_main_js():
-    """Read main.js and replace Electroview class with our mock."""
-    main_js_path = os.path.join(BUILD_DIR, "main.js")
-    with open(main_js_path, "r", encoding="utf-8") as f:
-        js = f.read()
-
-    with open(MOCK_JS_PATH, "r", encoding="utf-8") as f:
-        mock_js = f.read()
-
-    # Remove the original Electroview class definition and everything before it
-    # that's related to Electrobun (RPC socket setup, encryption, etc.)
-    # The built JS structure:
-    #   1. createRPC function (we KEEP this)
-    #   2. Electrobun internals: WEBVIEW_ID, RPC_SOCKET_PORT, Electroview class (we REPLACE)
-    #   3. App code: var rpc = Electroview.defineRPC({...}); etc. (we KEEP)
-
-    # Replace the Electroview class with our mock
-    # Pattern: from "var WEBVIEW_ID" to just before "var rpc = Electroview.defineRPC"
-    pattern = r'var WEBVIEW_ID = .*?class Electroview \{.*?\n\}'
-    patched = re.sub(pattern, mock_js, js, count=1, flags=re.DOTALL)
-    if patched == js:
-        raise RuntimeError(
-            "Failed to patch Electroview class — regex pattern did not match. "
-            "The built main.js structure may have changed."
-        )
-    js = patched
-
-    # Comment out initBackendStatus() — the mock's backendReady push handles this.
-    # Keeping initBackendStatus active causes competing RPC requests that
-    # interfere with the upload flow under load.
-    js = js.replace(
-        'initBackendStatus();',
-        '// initBackendStatus(); -- handled by mock Electroview'
-    )
-
-    return js
+TAURI_IPC_MOCK = """
+<script>
+window.__TAURI_INTERNALS__ = {
+  invoke: async function(command) {
+    if (command === "get_backend_status") {
+      const res = await fetch("http://127.0.0.1:8765/api/health");
+      return await res.json();
+    }
+    if (command === "open_file_dialog") {
+      return window.__testFilePath || null;
+    }
+    if (command === "open_output_folder") {
+      return null;
+    }
+    throw new Error("Unknown Tauri command: " + command);
+  }
+};
+</script>
+"""
 
 
 class PatchedHandler(http.server.SimpleHTTPRequestHandler):
-    """HTTP handler that serves patched frontend files."""
+    """HTTP handler that injects the Tauri IPC mock before app scripts."""
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=BUILD_DIR, **kwargs)
+        super().__init__(*args, directory=DIST_DIR, **kwargs)
 
     def do_GET(self):
-        if self.path == "/main.js" or self.path == "/main.js?":
-            content = get_patched_main_js()
+        if self.path in ("/", "/index.html", "/index.html?"):
+            index_path = os.path.join(DIST_DIR, "index.html")
+            with open(index_path, "r", encoding="utf-8") as f:
+                content = f.read().replace("</head>", f"{TAURI_IPC_MOCK}</head>")
             self.send_response(200)
-            self.send_header("Content-Type", "application/javascript; charset=utf-8")
+            self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(content.encode("utf-8"))))
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(content.encode("utf-8"))
         else:
-            # Add CORS headers for all responses
             super().do_GET()
 
     def end_headers(self):

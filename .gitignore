@@ -11,11 +11,16 @@ backend/storage/uploads/
 backend/storage/thumbnails/
 backend/storage/analysis/
 backend/storage/exports/
+backend/storage/output/
 
 # Node/Bun
 node_modules/
 dist/
 .electrobun/
+
+# Tauri/Rust
+src-tauri/target/
+src-tauri/gen/
 
 # IDE
 .idea/

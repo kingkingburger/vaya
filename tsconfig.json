@@ -11,10 +11,10 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "outDir": "./dist",
+    "outDir": "./dist-types",
     "rootDir": "./src",
-    "types": ["bun-types"]
+    "types": []
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "backend"]
+  "include": ["src/views/**/*"],
+  "exclude": ["node_modules", "dist", "dist-types", "backend"]
 }

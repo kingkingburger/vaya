@@ -2,7 +2,7 @@
 
 게임 영상을 드래그&드롭하면, AI가 하이라이트를 자동 감지하고 자막을 생성하여 YouTube/Shorts용으로 내보내는 올인원 편집 도구.
 
-![Electrobun](https://img.shields.io/badge/Electrobun-WebView2-blue)
+![Tauri](https://img.shields.io/badge/Tauri-Rust%20%2B%20WebView2-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Python-green)
 ![Whisper](https://img.shields.io/badge/Whisper-STT-orange)
 ![FFmpeg](https://img.shields.io/badge/FFmpeg-Video-red)
@@ -19,8 +19,8 @@
 
 | 영역 | 기술 |
 |------|------|
-| 데스크톱 | [Electrobun](https://electrobun.dev/) (Bun + WebView2) |
-| 프론트엔드 | TypeScript, HTML/CSS, Canvas API |
+| 데스크톱 | [Tauri](https://tauri.app/) v2 (Rust + WebView2) |
+| 프론트엔드 | TypeScript, Vite, HTML/CSS, Canvas API |
 | 백엔드 | Python FastAPI (REST + WebSocket) |
 | 영상 처리 | FFmpeg / FFprobe, NVENC 하드웨어 인코딩 |
 | 영상 분석 | OpenCV (프레임 차이), librosa (오디오 에너지) |
@@ -33,6 +33,7 @@
 
 - Python 3.10+, [uv](https://docs.astral.sh/uv/)
 - [Bun](https://bun.sh/), Node.js
+- [Rust](https://www.rust-lang.org/) / Cargo
 - [FFmpeg](https://ffmpeg.org/) (PATH에 등록)
 - NVIDIA GPU (선택, CUDA/NVENC 가속용)
 
@@ -46,24 +47,27 @@ bash start.sh
 또는 수동으로:
 
 ```bash
-# 1. 백엔드
-cd backend && uv sync && uv run uvicorn main:app --host 127.0.0.1 --port 8765
-
-# 2. 프론트엔드 (별도 터미널)
-bun install && npx electrobun dev
+# Tauri dev mode: Vite 프런트와 Rust 데스크톱 셸 실행
+bun install
+cd backend && uv sync
+cd ..
+bun run start
 ```
 
 ### 테스트
 
 ```bash
 cd backend && uv run pytest           # 유닛 테스트 (34개)
+bun run typecheck                     # TypeScript 타입 체크
+bun run build:frontend                # Vite 프런트 빌드
+cd src-tauri && cargo check           # Rust/Tauri 셸 체크
 cd backend && uv run pytest ../tests/e2e/ -v  # E2E 테스트 (30개)
 ```
 
 ## 프로젝트 구조
 
 ```
-src/bun/              # Electrobun 메인 프로세스
+src-tauri/            # Tauri Rust 데스크톱 셸
 src/views/main/       # WebView 프론트엔드 (HTML/CSS/TS)
 backend/              # Python FastAPI 서버
   routers/            # API 엔드포인트

@@ -1,5 +1,4 @@
-import { Electroview } from "electrobun/view";
-import type { VayaRPC } from "../../bun/rpc-schema";
+import { invoke } from "@tauri-apps/api/core";
 
 // ===== Constants =====
 const BACKEND_URL = "http://127.0.0.1:8765";
@@ -671,37 +670,21 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// ===== RPC setup =====
-const rpc = Electroview.defineRPC<VayaRPC>({
-  handlers: {
-    requests: {
-      updateStatus: ({ text, ready }) => {
-        // Legacy handler — no-op in new UI
-      },
-    },
-    messages: {
-      backendReady: ({ status, gpu_available, nvenc_available }) => {
-        gpuAvailable = gpu_available;
-        nvencAvailable = nvenc_available;
-        updateGpuText();
-        showScreen("drop");
-      },
-      backendError: ({ error }) => {
-        errorMessage.textContent = error || "백엔드 연결 실패";
-        showScreen("error");
-      },
-    },
-  },
-});
+type BackendHealth = {
+  status: string;
+  gpu_available: boolean;
+  nvenc_available: boolean;
+};
 
-const electroview = new Electroview({ rpc });
+async function getBackendStatus(): Promise<BackendHealth> {
+  return invoke<BackendHealth>("get_backend_status");
+}
 
 // ===== Auto-fetch backend status on webview init =====
-// The Electroview WebSocket to bun is async, so we retry until connected.
 async function initBackendStatus(retries = 20, interval = 500) {
   for (let i = 0; i < retries; i++) {
     try {
-      const health = await electroview.rpc.request.getBackendStatus({});
+      const health = await getBackendStatus();
       if (health.status === "ok") {
         gpuAvailable = health.gpu_available;
         nvencAvailable = health.nvenc_available;
@@ -724,8 +707,7 @@ initBackendStatus();
 // ===== Retry button =====
 retryBtn.addEventListener("click", () => {
   showScreen("loading");
-  // Request backend status check
-  electroview.rpc.request.getBackendStatus({}).then((health) => {
+  getBackendStatus().then((health) => {
     if (health.status === "ok") {
       gpuAvailable = health.gpu_available;
       nvencAvailable = health.nvenc_available;
@@ -745,12 +727,10 @@ retryBtn.addEventListener("click", () => {
 async function openAndSelectFile() {
   try {
     showLoading("파일 선택 대화상자를 여는 중...");
-    const res = await fetch(`${BACKEND_URL}/api/file-dialog`, { method: "POST" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (data.file_path) {
+    const filePath = await invoke<string | null>("open_file_dialog");
+    if (filePath) {
       showLoading("영상 파일 분석 중...");
-      await handleFileSelected(data.file_path);
+      await handleFileSelected(filePath);
     }
     hideLoading();
   } catch (err: any) {
@@ -1236,7 +1216,7 @@ function showExportComplete(files: Array<{ format: string; path: string; size: n
 
 openFolderBtn.addEventListener("click", async () => {
   try {
-    await electroview.rpc.request.openFolder({ path: "storage/output" });
+    await invoke("open_output_folder");
   } catch (e) {
     console.warn("Failed to open folder:", e);
   }

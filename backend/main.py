@@ -8,7 +8,7 @@ from routers import health, settings, upload, video, analyze, subtitle, export, 
 
 app = FastAPI(title="Vaya", version="0.1.0")
 
-# CORS - allow localhost origins for Electrobun webview
+# CORS - allow localhost origins for the Tauri webview
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
