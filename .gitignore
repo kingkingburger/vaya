@@ -1,12 +1,17 @@
 .omc
+.agents/
+.codex/
+.playwright-mcp/
 
 # Python
 __pycache__/
+.pytest_cache/
 *.pyc
 *.pyo
 .venv/
 
 # Backend storage (runtime data)
+backend/storage/
 backend/storage/uploads/
 backend/storage/thumbnails/
 backend/storage/analysis/
