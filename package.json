@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 1420",
     "build:frontend": "vite build",
+    "build:backend-sidecar": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-backend-sidecar.ps1",
     "typecheck": "tsc --noEmit",
     "tauri": "tauri",
     "start": "tauri dev",

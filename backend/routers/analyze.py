@@ -5,9 +5,10 @@ from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
 from models import HighlightSegment, SubtitleSegment
 from config import load_config
+from paths import storage_dir
 from ws.progress import progress_manager
 
-STORAGE_DIR = Path(__file__).parent.parent / "storage"
+STORAGE_DIR = storage_dir()
 ANALYSIS_DIR = STORAGE_DIR / "analysis"
 
 router = APIRouter()

@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pathlib import Path
 import uvicorn
 
+from paths import storage_dir
 from routers import health, settings, upload, video, analyze, subtitle, export
 
 app = FastAPI(title="Vaya", version="0.1.0")
@@ -18,7 +18,7 @@ app.add_middleware(
 )
 
 # Mount static files for thumbnail serving
-storage_path = Path(__file__).parent / "storage"
+storage_path = storage_dir()
 storage_path.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(storage_path)), name="static")
 

@@ -25,12 +25,13 @@ docs/              # PRD, requirements
 ```bash
 # Backend
 cd backend && uv run uvicorn main:app --host 127.0.0.1 --port 8765
-cd backend && uv run pytest              # Run tests (34 tests)
+cd backend && uv run pytest              # Run tests (45 tests)
 
 # Frontend
 bun run start                             # Tauri dev mode (starts Vite + Rust shell)
 bun run build:frontend                    # Vite frontend build
-bun run build                             # Tauri production build
+bun run build:backend-sidecar             # Build PyInstaller backend sidecar for Tauri bundle
+bun run build                             # Tauri production build (frontend + backend sidecar)
 bun run typecheck                         # TypeScript check
 cd src-tauri && cargo check               # Rust shell check
 

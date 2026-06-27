@@ -4,7 +4,7 @@ from typing import Optional
 import yaml
 from pydantic import BaseModel
 
-CONFIG_PATH = Path(__file__).parent / "config.yaml"
+from paths import config_path
 
 
 class HighlightConfig(BaseModel):
@@ -38,15 +38,16 @@ class AppConfig(BaseModel):
 
 
 def load_config(path: Optional[Path] = None) -> AppConfig:
-    config_path = path or CONFIG_PATH
-    if config_path.exists():
-        with open(config_path, "r", encoding="utf-8") as f:
+    resolved_path = path or config_path()
+    if resolved_path.exists():
+        with open(resolved_path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
         return AppConfig(**data)
     return AppConfig()
 
 
 def save_config(config: AppConfig, path: Optional[Path] = None) -> None:
-    config_path = path or CONFIG_PATH
-    with open(config_path, "w", encoding="utf-8") as f:
+    resolved_path = path or config_path()
+    resolved_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(resolved_path, "w", encoding="utf-8") as f:
         yaml.dump(config.model_dump(), f, default_flow_style=False, allow_unicode=True)

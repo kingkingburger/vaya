@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://127.0.0.1:1420",
-    "beforeBuildCommand": "bun run build:frontend",
+    "beforeBuildCommand": "bun run build:frontend && bun run build:backend-sidecar",
     "frontendDist": "../dist"
   },
   "app": {
@@ -24,6 +24,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "externalBin": ["binaries/vaya-backend"],
     "icon": ["icons/icon.ico"]
   }
 }

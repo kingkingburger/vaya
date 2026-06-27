@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from config import load_config
 from models import ExportRequest
+from paths import storage_dir
 from ws.progress import progress_manager
 
 router = APIRouter()
@@ -56,8 +57,7 @@ async def _run_export(video_id: str, req: ExportRequest):
     config = load_config()
 
     # Determine subtitles path
-    from pathlib import Path
-    analysis_dir = Path(__file__).parent.parent / "storage" / "analysis" / video_id
+    analysis_dir = storage_dir() / "analysis" / video_id
     srt_path = analysis_dir / "subtitles.srt"
     subtitles_path = str(srt_path) if srt_path.exists() else None
 

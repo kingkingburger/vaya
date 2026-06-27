@@ -6,9 +6,10 @@ from pathlib import Path
 
 from config import AppConfig
 from models import HighlightSegment, SubtitleSegment
+from paths import storage_dir
 
 
-STORAGE_DIR = Path(__file__).parent.parent / "storage"
+STORAGE_DIR = storage_dir()
 OUTPUT_DIR = STORAGE_DIR / "output"
 
 

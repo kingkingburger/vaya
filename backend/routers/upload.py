@@ -4,6 +4,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, UploadFile, File
 
 from models import UploadRequest, UploadResponse, VideoInfo
+from paths import storage_dir
 from services.video_info import extract_metadata, validate_video_file, SUPPORTED_EXTENSIONS
 from services.thumbnail_generator import generate_thumbnails
 
@@ -12,7 +13,7 @@ router = APIRouter()
 # In-memory video store (MVP — no database)
 _videos: dict[str, dict] = {}
 
-STORAGE_DIR = Path(__file__).parent.parent / "storage"
+STORAGE_DIR = storage_dir()
 THUMBNAILS_DIR = STORAGE_DIR / "thumbnails"
 UPLOADS_DIR = STORAGE_DIR / "uploads"
 
